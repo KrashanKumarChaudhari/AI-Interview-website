@@ -1,4 +1,7 @@
-function App() {
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import InterviewSetup from "./pages/InterviewSetup";
+
+function Home() {
   return (
     <div className="app">
       <nav className="navbar">
@@ -26,9 +29,11 @@ function App() {
             and get instant personalized feedback.
           </p>
 
-          <button className="start-btn">
-            Start Interview →
-          </button>
+          <Link to="/interview-setup">
+            <button className="start-btn">
+              Start Interview →
+            </button>
+          </Link>
         </div>
       </main>
 
@@ -49,6 +54,20 @@ function App() {
         </div>
       </section>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/interview-setup"
+          element={<InterviewSetup />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
