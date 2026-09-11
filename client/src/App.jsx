@@ -1,3 +1,4 @@
+import Interview from "./pages/Interview";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import InterviewSetup from "./pages/InterviewSetup";
 
@@ -59,15 +60,20 @@ function Home() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route
-          path="/interview-setup"
-          element={<InterviewSetup />}
-        />
-      </Routes>
-    </BrowserRouter>
+ <BrowserRouter>
+  <Routes>
+
+    <Route path="/" element={<Home />} />
+
+    <Route path="/interview" element={<Interview />} />
+
+    <Route
+      path="/interview-setup"
+      element={<InterviewSetup />}
+    />
+
+  </Routes>
+</BrowserRouter>
   );
 }
 
