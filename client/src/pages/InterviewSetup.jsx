@@ -1,85 +1,95 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+
 function InterviewSetup() {
-const navigate = useNavigate();    
-const [role, setRole] = useState("");
-const [experience, setExperience] = useState("");
-const [type, setType] = useState("");
-const [questions, setQuestions] = useState("");
+  const [role, setRole] = useState("");
+  const [experience, setExperience] = useState("");
+  const [type, setType] = useState("");
+
+  const navigate = useNavigate();
+
+  const questions = [
+    "Tell me about yourself.",
+    "What are your technical skills?",
+    "Describe a challenging project you worked on.",
+    "How do you handle pressure and deadlines?",
+    "Why should we hire you?"
+  ];
 
   return (
-    <div className="setup-page">
+    <div>
       <div className="setup-card">
         <h1>Interview Setup</h1>
 
-        <p>Configure your AI interview</p>
-
-        <label>Job Role</label>
-
-        <input
-          type="text"
-          placeholder="e.g. Frontend Developer"
+        <label>Select Role</label>
+        <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-        />
+        >
+          <option value="">Select role</option>
+          <option value="Software Developer">Software Developer</option>
+          <option value="Web Developer">Web Developer</option>
+          <option value="Java Developer">Java Developer</option>
+          <option value="Python Developer">Python Developer</option>
+        </select>
 
-        <label>Experience Level</label>
+        <br />
+        <br />
 
-<select
-  value={experience}
-  onChange={(e) => setExperience(e.target.value)}
->
-  <option value="">Select experience level</option>
-  <option value="beginner">Beginner</option>
-  <option value="intermediate">Intermediate</option>
-  <option value="advanced">Advanced</option>
-</select>
+        <label>Select Experience</label>
+        <select
+          value={experience}
+          onChange={(e) => setExperience(e.target.value)}
+        >
+          <option value="">Select experience level</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+
+        <br />
+        <br />
 
         <label>Interview Type</label>
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+        >
+          <option value="">Select interview type</option>
+          <option value="Technical">Technical</option>
+          <option value="HR">HR</option>
+          <option value="Mixed">Mixed</option>
+        </select>
 
-<select
-  value={type}
-  onChange={(e) => setType(e.target.value)}
->
-  <option value="">Select interview type</option>
-  <option value="technical">Technical</option>
-  <option value="hr">HR</option>
-  <option value="mixed">Technical + HR</option>
-</select>
+        <br />
+        <br />
 
-        <label>Number of Questions</label>
+        <button
+          className="start-btn"
+          onClick={() => {
+            console.log({
+              role,
+              experience,
+              type,
+              questions
+            });
 
-<select
-  value={questions}
-  onChange={(e) => setQuestions(e.target.value)}
->
-  <option value="">Select number of questions</option>
-  <option value="5">5 Questions</option>
-  <option value="10">10 Questions</option>
-  <option value="15">15 Questions</option>
-  <option value="20">20 Questions</option>
-</select>
-
-<button
-  className="start-btn"
-  onClick={() => {
-    console.log({
-      role,
-      experience,
-      type,
-      questions,
-    });
-    navigate("/interview");
-  }}
->
-  Continue →
-</button>
-
+            navigate("/interview", {
+              state: {
+                role,
+                experience,
+                type,
+                questions
+              }
+            });
+          }}
+        >
+          Start Interview
+        </button>
       </div>
     </div>
   );
 }
-
 
 export default InterviewSetup;
