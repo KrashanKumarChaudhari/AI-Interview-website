@@ -1,28 +1,25 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-const questions = [
-  "Tell me about yourself.",
-  "What are your strengths?",
-  "What are your weaknesses?",
-  "Why should we hire you?",
-  "Where do you see yourself in five years?"
-];
+import { useLocation, useNavigate } from "react-router-dom";
 
 function Interview() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const { role, experience, type, questions } = location.state || {};
+
   const [answer, setAnswer] = useState("");
   const [questionNumber, setQuestionNumber] = useState(1);
   const [completed, setCompleted] = useState(false);
   const [answers, setAnswers] = useState([]);
-  const navigate = useNavigate();
 
   const score = answers.filter((ans) => ans.trim() !== "").length;
+
   let performanceMessage = "";
 
   if (score >= 4) {
     performanceMessage = "Great job! You performed well.";
   } else if (score >= 2) {
-    performanceMessage = "Good effor! Keep practicing.";
+    performanceMessage = "Good effort! Keep practicing.";
   } else {
     performanceMessage = "Keep practicing and improve your answers.";
   }
@@ -33,26 +30,48 @@ function Interview() {
         <div>
           <h1>Interview Completed</h1>
           <p>Thank you for completing the interview.</p>
-          <h2>Your Score: {score} / {questions.length}</h2>
+
+          <h2>Your Score: {score} / {questions?.length}</h2>
+
           <p>{performanceMessage}</p>
 
           <h2>Your Answers</h2>
 
-          {
-            answers.map((ans, index) => (
-              <p key={index}>
-                    <strong>Question {index +1}:</strong> {ans}
-              </p>  
-
-            ))}
+          {answers.map((ans, index) => (
+            <p key={index}>
+              <strong>Question {index + 1}:</strong> {ans}
+            </p>
+          ))}
         </div>
       ) : (
         <div>
           <h1>AI Interview</h1>
 
-          <h2>Question {questionNumber}</h2>
+          <p>Role: {role}</p>
+          <p>Experience: {experience}</p>
+          <p>Type: {type}</p>
 
-          <p>{questions[questionNumber - 1]}</p>
+          <h2>Question {questionNumber} of {questions?.length}</h2>
+          <div 
+            style={{
+              width: "100%",
+              height: "10px",
+              backgroundColor: "#ddd",
+              borderRadius: "15px 0"
+            }}
+
+          >
+            <div
+              style={{
+                width: `${(questionNumber / questions.length) * 100}%`,
+                height: "100%",
+                backgroundColor: "#4f46e5",
+                borderRadius: "5px"
+              }}  
+            ></div>  
+            </div>
+
+          <p>{questions?.[questionNumber - 1]}</p>
 
           <textarea
             placeholder="Type your answer here..."
@@ -65,35 +84,37 @@ function Interview() {
           <br />
           <br />
 
-        <button
-  onClick={() => {
-    console.log(answer);
+          <button
+          
+            onClick={() => {
+              if (answer.trim() === "") {
+                alert("Please enter your answer before submitting.");
+                return;
+              }
+              const updatedAnswers = [...answers, answer];
 
-    const updatedAnswers = [...answers, answer];
-    setAnswers(updatedAnswers);
-    setAnswer("");
+              setAnswers(updatedAnswers);
+              setAnswer("");
 
-    if (questionNumber < questions.length) {
-      setQuestionNumber(questionNumber + 1);
-    } else {
-      setCompleted(true);
+              if (questionNumber < questions.length) {
+                setQuestionNumber(questionNumber + 1);
+              } else {
+                setCompleted(true);
 
-      const finalScore = updatedAnswers.filter(
-        (ans) => ans.trim() !== ""
-      ).length;
-
-      navigate("/result", {
-        state: {
-          score: finalScore,
-          answers: updatedAnswers,
-          questions: questions
-        }
-      });
-    }
-  }}
->
-  Submit Answer
-</button>
+                navigate("/result", {
+                  state: {
+                    score: updatedAnswers.filter(
+                      (ans) => ans.trim() !== ""
+                    ).length,
+                    answers: updatedAnswers,
+                    questions: questions
+                  }
+                });
+              }
+            }}
+          >
+            Submit Answer
+          </button>
         </div>
       )}
     </div>
