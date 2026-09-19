@@ -1,3 +1,4 @@
+import Result from "./pages/Result";
 import Interview from "./pages/Interview";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import InterviewSetup from "./pages/InterviewSetup";
@@ -71,6 +72,7 @@ function App() {
       path="/interview-setup"
       element={<InterviewSetup />}
     />
+    <Route path="/result" element={<Result />} />
 
   </Routes>
 </BrowserRouter>

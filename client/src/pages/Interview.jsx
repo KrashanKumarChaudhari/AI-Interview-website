@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const questions = [
   "Tell me about yourself.",
@@ -13,6 +14,7 @@ function Interview() {
   const [questionNumber, setQuestionNumber] = useState(1);
   const [completed, setCompleted] = useState(false);
   const [answers, setAnswers] = useState([]);
+  const navigate = useNavigate();
 
   const score = answers.filter((ans) => ans.trim() !== "").length;
   let performanceMessage = "";
@@ -63,21 +65,35 @@ function Interview() {
           <br />
           <br />
 
-          <button
-            onClick={() => {
-              console.log(answer);
-              setAnswers([...answers, answer])
-              setAnswer("");
+        <button
+  onClick={() => {
+    console.log(answer);
 
-              if (questionNumber < questions.length) {
-                setQuestionNumber(questionNumber + 1);
-              } else {
-                setCompleted(true);
-              }
-            }}
-          >
-            Submit Answer
-          </button>
+    const updatedAnswers = [...answers, answer];
+    setAnswers(updatedAnswers);
+    setAnswer("");
+
+    if (questionNumber < questions.length) {
+      setQuestionNumber(questionNumber + 1);
+    } else {
+      setCompleted(true);
+
+      const finalScore = updatedAnswers.filter(
+        (ans) => ans.trim() !== ""
+      ).length;
+
+      navigate("/result", {
+        state: {
+          score: finalScore,
+          answers: updatedAnswers,
+          questions: questions
+        }
+      });
+    }
+  }}
+>
+  Submit Answer
+</button>
         </div>
       )}
     </div>
