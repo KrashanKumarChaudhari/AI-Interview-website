@@ -36,7 +36,11 @@ function Login() {
 
       alert("Login successful!");
 
-      navigate("/");
+localStorage.setItem("token", data.token);
+localStorage.setItem("user", JSON.stringify(data.user));
+
+navigate("/");
+
     } catch (error) {
       console.error("Login error:", error);
       alert("Server connection failed.");
