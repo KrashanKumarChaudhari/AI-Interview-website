@@ -7,7 +7,7 @@ function Login() {
 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     if (email === "" || password === "") {
@@ -15,9 +15,32 @@ function Login() {
       return;
     }
 
-    alert("Login successful!");
+    try {
+      const response = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
 
-    navigate("/");
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert("Login successful!");
+
+      navigate("/");
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Server connection failed.");
+    }
   };
 
   return (
@@ -32,7 +55,6 @@ function Login() {
         boxSizing: "border-box"
       }}
     >
-
       <div
         style={{
           width: "100%",
@@ -45,7 +67,6 @@ function Login() {
           boxSizing: "border-box"
         }}
       >
-
         <h1
           style={{
             textAlign: "center",
@@ -66,9 +87,7 @@ function Login() {
           Login to your AI Interview account
         </p>
 
-
         <form onSubmit={handleLogin}>
-
           <label
             style={{
               display: "block",
@@ -95,7 +114,6 @@ function Login() {
               fontSize: "15px"
             }}
           />
-
 
           <label
             style={{
@@ -124,7 +142,6 @@ function Login() {
             }}
           />
 
-
           <button
             type="submit"
             style={{
@@ -141,9 +158,7 @@ function Login() {
           >
             Login
           </button>
-
         </form>
-
 
         <button
           onClick={() => navigate("/")}
@@ -162,8 +177,23 @@ function Login() {
           Back to Home
         </button>
 
+        <button
+          onClick={() => navigate("/signup")}
+          style={{
+            width: "100%",
+            marginTop: "15px",
+            padding: "12px",
+            backgroundColor: "transparent",
+            color: "#cbd5e1",
+            border: "1px solid #64748b",
+            borderRadius: "8px",
+            fontSize: "15px",
+            cursor: "pointer"
+          }}
+        >
+          Create New Account
+        </button>
       </div>
-
     </div>
   );
 }
