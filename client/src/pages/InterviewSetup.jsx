@@ -68,6 +68,10 @@ function InterviewSetup() {
         <button
           className="start-btn"
           onClick={() => {
+            if (role === "" || experience === "" || type === "") {
+                alert("Please select Role Experience and Interview Type.");
+                return;
+            }
             console.log({
               role,
               experience,
