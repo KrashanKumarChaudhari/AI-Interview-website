@@ -1,5 +1,6 @@
 import Result from "./pages/Result";
 import Interview from "./pages/Interview";
+import Login from "./pages/Login";
 
 import {
   BrowserRouter,
@@ -35,56 +36,154 @@ function Home() {
     <div
       className="app"
       style={{
-        scrollBehavior: "smooth",
-        minHeight: "100vh"
+        minHeight: "100vh",
+        backgroundColor: "#0f172a",
+        color: "#ffffff",
+        scrollBehavior: "smooth"
       }}
     >
 
-      {/* Navbar */}
-      <nav className="navbar">
+      {/* NAVBAR */}
 
-        <div className="logo">
+      <nav
+        className="navbar"
+        style={{
+          backgroundColor: "#0f172a"
+        }}
+      >
+
+        <div
+          className="logo"
+          style={{
+            color: "#ffffff",
+            fontWeight: "700"
+          }}
+        >
           AI Interview
         </div>
 
         <div className="nav-links">
 
-          <Link to="/">
+          <Link
+            to="/"
+            style={{
+              color: "#ffffff",
+              fontWeight: "600"
+            }}
+          >
             Home
           </Link>
 
-          <Link to="/#about">
+          <Link
+            to="/#about"
+            style={{
+              color: "#ffffff",
+              fontWeight: "600"
+            }}
+          >
             About
           </Link>
 
-          <Link to="/#features">
+          <Link
+            to="/#features"
+            style={{
+              color: "#ffffff",
+              fontWeight: "600"
+            }}
+          >
             Features
           </Link>
 
-          <button className="login-btn">
-            Login
-          </button>
+          {/* LOGIN */}
+
+          <Link
+            to="/login"
+            style={{
+              textDecoration: "none"
+            }}
+          >
+            <button
+              className="login-btn"
+              style={{
+                color: "#ffffff",
+                fontWeight: "600"
+              }}
+            >
+              Login
+            </button>
+          </Link>
 
         </div>
 
       </nav>
 
 
-      {/* Hero Section */}
-      <main className="hero">
+      {/* HERO SECTION */}
 
-        <div className="hero-content">
+      <main
+        className="hero"
+        style={{
+          minHeight: "70vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "60px 20px",
+          backgroundColor: "#0f172a",
+          boxSizing: "border-box"
+        }}
+      >
 
-          <p className="badge">
+        <div
+          className="hero-content"
+          style={{
+            maxWidth: "850px"
+          }}
+        >
+
+          <p
+            className="badge"
+            style={{
+              color: "#a5b4fc",
+              fontWeight: "700",
+              fontSize: "16px"
+            }}
+          >
             🤖 AI-Powered Interview Practice
           </p>
 
-          <h1>
+          <h1
+            style={{
+              color: "#ffffff",
+              fontSize: "48px",
+              fontWeight: "800",
+              lineHeight: "1.2",
+              marginBottom: "22px"
+            }}
+          >
             Prepare for your
-            <span> Dream Interview</span>
+
+            <span
+              style={{
+                color: "#818cf8"
+              }}
+            >
+              {" "}Dream Interview
+            </span>
+
           </h1>
 
-          <p className="description">
+          <p
+            className="description"
+            style={{
+              color: "#cbd5e1",
+              fontSize: "18px",
+              fontWeight: "500",
+              lineHeight: "1.8",
+              maxWidth: "700px",
+              margin: "0 auto 30px"
+            }}
+          >
             Practice real interview questions with AI,
             improve your answers, and get instant
             personalized feedback.
@@ -92,7 +191,18 @@ function Home() {
 
           <Link to="/interview-setup">
 
-            <button className="start-btn">
+            <button
+              className="start-btn"
+              style={{
+                color: "#ffffff",
+                fontWeight: "700",
+                padding: "14px 28px",
+                fontSize: "17px",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer"
+              }}
+            >
               Start Interview →
             </button>
 
@@ -103,20 +213,24 @@ function Home() {
       </main>
 
 
-      {/* About Section */}
+      {/* ABOUT SECTION */}
+
       <section
         id="about"
         style={{
-          padding: "70px 20px",
-          textAlign: "center"
+          padding: "80px 20px",
+          textAlign: "center",
+          backgroundColor: "#0f172a",
+          color: "#ffffff"
         }}
       >
 
         <h2
           style={{
-            fontSize: "32px",
-            marginBottom: "15px",
-            color: "#222"
+            color: "#ffffff",
+            fontSize: "34px",
+            fontWeight: "800",
+            marginBottom: "18px"
           }}
         >
           About AI Interview
@@ -124,11 +238,12 @@ function Home() {
 
         <p
           style={{
-            maxWidth: "700px",
+            maxWidth: "720px",
             margin: "0 auto",
-            lineHeight: "1.7",
+            color: "#cbd5e1",
             fontSize: "17px",
-            color: "#555"
+            fontWeight: "500",
+            lineHeight: "1.8"
           }}
         >
           AI Interview is a smart mock interview platform
@@ -140,15 +255,18 @@ function Home() {
       </section>
 
 
-      {/* Features Section */}
+      {/* FEATURES SECTION */}
+
       <section
         id="features"
         style={{
-          padding: "70px 20px",
+          padding: "80px 20px",
           display: "flex",
-          gap: "20px",
+          gap: "24px",
           justifyContent: "center",
-          flexWrap: "wrap"
+          flexWrap: "wrap",
+          backgroundColor: "#0f172a",
+          color: "#ffffff"
         }}
       >
 
@@ -156,8 +274,9 @@ function Home() {
           style={{
             width: "100%",
             textAlign: "center",
-            fontSize: "32px",
-            color: "#222",
+            color: "#ffffff",
+            fontSize: "34px",
+            fontWeight: "800",
             marginBottom: "5px"
           }}
         >
@@ -168,9 +287,10 @@ function Home() {
           style={{
             width: "100%",
             textAlign: "center",
-            color: "#555",
+            color: "#cbd5e1",
             fontSize: "17px",
-            marginBottom: "20px"
+            fontWeight: "500",
+            marginBottom: "25px"
           }}
         >
           Everything you need to improve your
@@ -178,29 +298,38 @@ function Home() {
         </p>
 
 
-        {/* Feature 1 */}
+        {/* FEATURE 1 */}
+
         <div
           style={{
-            width: "250px",
-            padding: "25px",
-            backgroundColor: "transparent",
-            color: "#222",
-            borderRadius: "12px",
-            border: "1px solid #d5d8e5",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+            width: "260px",
+            padding: "28px",
+            backgroundColor: "#172554",
+            color: "#ffffff",
+            borderRadius: "14px",
+            border: "1px solid #3730a3",
+            boxShadow: "0 8px 25px rgba(0,0,0,0.25)",
             textAlign: "center",
             boxSizing: "border-box"
           }}
         >
 
-          <h3 style={{ color: "#222" }}>
+          <h3
+            style={{
+              color: "#ffffff",
+              fontSize: "20px",
+              fontWeight: "700"
+            }}
+          >
             🤖 AI Questions
           </h3>
 
           <p
             style={{
-              color: "#555",
-              lineHeight: "1.6"
+              color: "#dbeafe",
+              fontSize: "15px",
+              fontWeight: "500",
+              lineHeight: "1.7"
             }}
           >
             Get intelligent interview questions based on
@@ -210,29 +339,38 @@ function Home() {
         </div>
 
 
-        {/* Feature 2 */}
+        {/* FEATURE 2 */}
+
         <div
           style={{
-            width: "250px",
-            padding: "25px",
-            backgroundColor: "transparent",
-            color: "#222",
-            borderRadius: "12px",
-            border: "1px solid #d5d8e5",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+            width: "260px",
+            padding: "28px",
+            backgroundColor: "#172554",
+            color: "#ffffff",
+            borderRadius: "14px",
+            border: "1px solid #3730a3",
+            boxShadow: "0 8px 25px rgba(0,0,0,0.25)",
             textAlign: "center",
             boxSizing: "border-box"
           }}
         >
 
-          <h3 style={{ color: "#222" }}>
+          <h3
+            style={{
+              color: "#ffffff",
+              fontSize: "20px",
+              fontWeight: "700"
+            }}
+          >
             📊 Smart Feedback
           </h3>
 
           <p
             style={{
-              color: "#555",
-              lineHeight: "1.6"
+              color: "#dbeafe",
+              fontSize: "15px",
+              fontWeight: "500",
+              lineHeight: "1.7"
             }}
           >
             Understand your strengths and areas for
@@ -242,29 +380,38 @@ function Home() {
         </div>
 
 
-        {/* Feature 3 */}
+        {/* FEATURE 3 */}
+
         <div
           style={{
-            width: "250px",
-            padding: "25px",
-            backgroundColor: "transparent",
-            color: "#222",
-            borderRadius: "12px",
-            border: "1px solid #d5d8e5",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+            width: "260px",
+            padding: "28px",
+            backgroundColor: "#172554",
+            color: "#ffffff",
+            borderRadius: "14px",
+            border: "1px solid #3730a3",
+            boxShadow: "0 8px 25px rgba(0,0,0,0.25)",
             textAlign: "center",
             boxSizing: "border-box"
           }}
         >
 
-          <h3 style={{ color: "#222" }}>
+          <h3
+            style={{
+              color: "#ffffff",
+              fontSize: "20px",
+              fontWeight: "700"
+            }}
+          >
             🎯 Track Progress
           </h3>
 
           <p
             style={{
-              color: "#555",
-              lineHeight: "1.6"
+              color: "#dbeafe",
+              fontSize: "15px",
+              fontWeight: "500",
+              lineHeight: "1.7"
             }}
           >
             Monitor your interview performance over
@@ -304,6 +451,11 @@ function App() {
         <Route
           path="/result"
           element={<Result />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
         />
 
       </Routes>
