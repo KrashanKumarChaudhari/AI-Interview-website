@@ -1,3 +1,4 @@
+import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import Result from "./pages/Result";
 import Interview from "./pages/Interview";
@@ -463,6 +464,8 @@ function App() {
             path="/signup"
             element={<Signup />}
             />
+
+            <Route path="/profile" element={<Profile />} />
 
       </Routes>
 
