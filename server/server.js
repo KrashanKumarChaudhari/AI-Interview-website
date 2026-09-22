@@ -38,8 +38,6 @@ app.get("/db-test", async (req, res) => {
   }
 });
 
-const PORT = 5000;
-
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -107,28 +105,25 @@ app.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-  {
-    id: user.id,
-    email: user.email
-  },
-  process.env.JWT_SECRET,
-  {
-    expiresIn: "1h"
-  }
-);
+      {
+        id: user.id,
+        email: user.email
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h"
+      }
+    );
 
-
-
-  res.json({ 
-  message: "Login successful!",
-  token: token,
-  user: {
-    id: user.id,
-    name: user.name,
-    email: user.email
-  }
-});
-
+    res.json({
+      message: "Login successful!",
+      token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
 
   } catch (error) {
     console.error("Login error:", error.message);
@@ -139,6 +134,51 @@ app.post("/login", async (req, res) => {
   }
 });
 
+
+// JWT Token Verification Middleware
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({
+      message: "Access denied. No token provided."
+    });
+  }
+
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    req.user = decoded;
+
+    next();
+
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid or expired token."
+    });
+  }
+}
+
+// Protected Profile Route
+app.get("/profile", verifyToken, (req, res) => {
+  res.json({
+    message: "Protected profile accessed successfully!",
+    user: req.user
+  });
+});
+
+
+const PORT = 5000;
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+
+
