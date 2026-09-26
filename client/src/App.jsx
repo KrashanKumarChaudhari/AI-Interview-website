@@ -1,8 +1,11 @@
+// Interview details page
+import InterviewDetails from "./pages/InterviewDetails";
 import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import Result from "./pages/Result";
 import Interview from "./pages/Interview";
 import Login from "./pages/Login";
+
 
 import {
   BrowserRouter,
@@ -16,6 +19,7 @@ import InterviewSetup from "./pages/InterviewSetup";
 import { useEffect } from "react";
 
 function Home() {
+  const isLoggedIn = localStorage.getItem("token");
   const location = useLocation();
 
   useEffect(() => {
@@ -98,22 +102,48 @@ function Home() {
 
           {/* LOGIN */}
 
-          <Link
-            to="/login"
-            style={{
-              textDecoration: "none"
-            }}
-          >
-            <button
-              className="login-btn"
-              style={{
-                color: "#ffffff",
-                fontWeight: "600"
-              }}
-            >
-              Login
-            </button>
-          </Link>
+          {!isLoggedIn && (
+  <Link
+    to="/login"
+    style={{
+      textDecoration: "none"
+    }}
+  >
+    <button
+      className="login-btn"
+      style={{
+        color: "#ffffff",
+        fontWeight: "600"
+      }}
+    >
+      Login
+    </button>
+  </Link>
+)}
+
+        {isLoggedIn && (
+  <Link
+    to="/profile"
+    style={{
+      textDecoration: "none"
+    }}
+  >
+    <button
+     style={{
+  color: "#ffffff",
+  backgroundColor: "#4f46e5",
+  fontWeight: "600",
+  border: "none",
+  borderRadius: "8px",
+  padding: "10px 20px",
+  marginLeft: "10px",
+  cursor: "pointer"
+}}
+    >
+      Profile
+    </button>
+  </Link>
+)}
 
         </div>
 
@@ -466,6 +496,12 @@ function App() {
             />
 
             <Route path="/profile" element={<Profile />} />
+            
+  /* Route for viewing a single interview's details */
+            <Route 
+              path="/interview-details/:id"
+              element={<InterviewDetails />}
+            />  
 
       </Routes>
 

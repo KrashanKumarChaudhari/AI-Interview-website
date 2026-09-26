@@ -5,169 +5,360 @@ function Interview() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Get interview setup data from InterviewSetup page
   const { role, experience, type, questions } = location.state || {};
 
+  // Get logged-in user information from localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.id;
+
+  // Store the current answer typed by the user
   const [answer, setAnswer] = useState("");
+
+  // Track the current question number
   const [questionNumber, setQuestionNumber] = useState(1);
-  const [completed, setCompleted] = useState(false);
+
+  // Store all answers given during the interview
   const [answers, setAnswers] = useState([]);
 
-  const score = answers.filter((ans) => ans.trim() !== "").length;
+  // Track whether the interview is currently being saved
+  const [saving, setSaving] = useState(false);
 
-  let performanceMessage = "";
+  // If interview setup data is missing, show an error
+  if (!questions || questions.length === 0) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#0f172a",
+          color: "#ffffff",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: "20px",
+          padding: "20px"
+        }}
+      >
+        <h2>Interview data not found.</h2>
 
-  if (score >= 4) {
-    performanceMessage = "Great job! You performed well.";
-  } else if (score >= 2) {
-    performanceMessage = "Good effort! Keep practicing.";
-  } else {
-    performanceMessage = "Keep practicing and improve your answers.";
+        <button
+          onClick={() => navigate("/interview-setup")}
+          style={{
+            padding: "12px 22px",
+            backgroundColor: "#4f46e5",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "600"
+          }}
+        >
+          Back to Interview Setup
+        </button>
+      </div>
+    );
   }
 
+  // Calculate the current score from submitted non-empty answers
+  const score = answers.filter(
+    (ans) => ans.trim() !== ""
+  ).length;
+
+  // Handle submitting the current answer
+  const handleSubmitAnswer = async () => {
+    // Prevent submitting an empty answer
+    if (answer.trim() === "") {
+      alert("Please enter your answer before submitting.");
+      return;
+    }
+
+    // Make sure a logged-in user exists
+    if (!userId) {
+      alert("Please login before starting an interview.");
+      navigate("/login");
+      return;
+    }
+
+    // Add the current answer to the answers array
+    const updatedAnswers = [...answers, answer.trim()];
+
+    // Update answers state
+    setAnswers(updatedAnswers);
+
+    // Clear the textarea
+    setAnswer("");
+
+    // If more questions are remaining, move to the next question
+    if (questionNumber < questions.length) {
+      setQuestionNumber(questionNumber + 1);
+      return;
+    }
+
+    // Final question has been submitted
+    setSaving(true);
+
+    // Calculate final score
+    const finalScore = updatedAnswers.filter(
+      (ans) => ans.trim() !== ""
+    ).length;
+
+    try {
+      // Send the complete interview attempt to the backend
+      const response = await fetch(
+        "http://localhost:5000/api/interviews",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            // Logged-in user's ID
+            user_id: userId,
+
+            // Interview configuration
+            role: role,
+            experience: experience,
+            interview_type: type,
+
+            // Final score
+            score: finalScore,
+
+            // Total number of questions
+            total_questions: questions.length,
+
+            // Save all questions
+            questions: questions,
+
+            // Save all user answers
+            answers: updatedAnswers
+          })
+        }
+      );
+
+      // Convert backend response to JSON
+      const data = await response.json();
+
+      // Check whether the interview was actually saved
+      if (!response.ok) {
+        console.error("Backend save error:", data);
+
+        alert(
+          data.message || "Failed to save interview result."
+        );
+
+        setSaving(false);
+        return;
+      }
+
+      // Confirm successful save in browser console
+      console.log(
+        "Interview saved successfully:",
+        data.interview
+      );
+
+      // Go to Result page only after successful database save
+      navigate("/result", {
+        state: {
+          score: finalScore,
+          answers: updatedAnswers,
+          questions: questions
+        }
+      });
+    } catch (error) {
+      // Handle server connection or network errors
+      console.error(
+        "Error saving interview result:",
+        error
+      );
+
+      alert(
+        "Unable to save interview. Please make sure the backend server is running."
+      );
+
+      setSaving(false);
+    }
+  };
+
   return (
-    <div>
-      {completed ? (
-        <div>
-          <h1>Interview Completed</h1>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#0f172a",
+        color: "#ffffff",
+        padding: "40px 20px"
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "800px",
+          margin: "0 auto",
+          backgroundColor: "#172554",
+          padding: "40px",
+          borderRadius: "18px",
+          border: "1px solid #3730a3",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)"
+        }}
+      >
+        {/* Interview heading */}
+        <h1
+          style={{
+            margin: "0 0 10px",
+            fontSize: "32px"
+          }}
+        >
+          AI Mock Interview
+        </h1>
 
-          <p>Thank you for completing the interview.</p>
+        <p
+          style={{
+            color: "#a5b4fc",
+            marginBottom: "30px"
+          }}
+        >
+          Answer the questions to complete your interview.
+        </p>
 
-          <h2>
-            Your Score: {score} / {questions?.length}
-          </h2>
-
-          <p>{performanceMessage}</p>
-
-          <h2>Your Answers</h2>
-
-          {answers.map((ans, index) => (
-            <p key={index}>
-              <strong>Question {index + 1}:</strong> {ans}
-            </p>
-          ))}
-        </div>
-      ) : (
-        <div>
-          <h1>AI Interview</h1>
-
-          <p style={{ color: "#666", marginBottom: "20px" }}>
-            Answer each question carefully before submitting.
+        {/* Interview configuration information */}
+        <div
+          style={{
+            backgroundColor: "#0f172a",
+            padding: "20px",
+            borderRadius: "12px",
+            marginBottom: "30px",
+            border: "1px solid #334155"
+          }}
+        >
+          <p style={{ margin: "0 0 10px" }}>
+            <strong>Role:</strong> {role}
           </p>
 
-          <p>Role: {role}</p>
-          <p>Experience: {experience}</p>
-          <p>Type: {type}</p>
+          <p style={{ margin: "0 0 10px" }}>
+            <strong>Experience:</strong> {experience}
+          </p>
 
-          <h2
+          <p style={{ margin: "0 0 10px" }}>
+            <strong>Interview Type:</strong> {type}
+          </p>
+
+          <p style={{ margin: 0 }}>
+            <strong>Total Questions:</strong>{" "}
+            {questions.length}
+          </p>
+        </div>
+
+        {/* Interview progress */}
+        <div style={{ marginBottom: "20px" }}>
+          <p
             style={{
-              color: "#222",
-              backgroundColor: "#ffffff",
-              padding: "10px 15px",
-              borderRadius: "8px"
+              margin: "0 0 8px",
+              color: "#cbd5e1"
             }}
           >
-            Question {questionNumber} of {questions?.length}
-          </h2>
+            Question {questionNumber} of {questions.length}
+          </p>
 
-          {/* Progress Bar */}
+          {/* Progress bar */}
           <div
             style={{
               width: "100%",
-              height: "10px",
-              backgroundColor: "#ddd",
-              borderRadius: "5px",
-              margin: "15px 0 20px"
+              height: "8px",
+              backgroundColor: "#334155",
+              borderRadius: "10px",
+              overflow: "hidden"
             }}
           >
             <div
               style={{
-                width: `${(questionNumber / questions.length) * 100}%`,
+                width: `${
+                  (questionNumber / questions.length) * 100
+                }%`,
                 height: "100%",
-                backgroundColor: "#4f46e5",
-                borderRadius: "5px"
+                backgroundColor: "#6366f1",
+                borderRadius: "10px"
               }}
             ></div>
           </div>
+        </div>
 
-          {/* Current Question */}
-          <p
+        {/* Current interview question */}
+        <div
+          style={{
+            backgroundColor: "#0f172a",
+            padding: "25px",
+            borderRadius: "12px",
+            marginBottom: "20px",
+            border: "1px solid #334155"
+          }}
+        >
+          <h2
             style={{
-              fontSize: "20px",
-              fontWeight: "600",
-              color: "#222",
-              padding: "20px",
-              backgroundColor: "#f5f5f5",
-              borderRadius: "10px",
-              marginBottom: "20px"
+              margin: 0,
+              fontSize: "22px",
+              lineHeight: "1.5"
             }}
           >
-            {questions?.[questionNumber - 1]}
-          </p>
+            {questions[questionNumber - 1]}
+          </h2>
+        </div>
 
-          {/* Answer Box */}
-          <textarea
-            placeholder="Type your answer here..."
-            rows="6"
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            style={{
-              width: "100%",
-              minHeight: "150px",
-              padding: "15px",
-              fontSize: "16px",
-              border: "1px solid #ccc",
-              borderRadius: "10px",
-              resize: "vertical",
-              boxSizing: "border-box"
-            }}
-          />
+        {/* Answer input */}
+        <textarea
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder="Type your answer here..."
+          rows="8"
+          disabled={saving}
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "15px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            border: "1px solid #475569",
+            borderRadius: "10px",
+            resize: "vertical",
+            fontSize: "16px",
+            outline: "none",
+            marginBottom: "20px",
+            opacity: saving ? 0.6 : 1
+          }}
+        />
 
-          <br />
-          <br />
-
-          {/* Submit Button */}
+        {/* Submit answer button */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end"
+          }}
+        >
           <button
+            onClick={handleSubmitAnswer}
+            disabled={saving}
             style={{
-              marginTop: "15px",
-              padding: "12px 25px",
-              fontSize: "16px",
-              fontWeight: "600",
+              padding: "12px 24px",
+              backgroundColor: saving
+                ? "#64748b"
+                : "#4f46e5",
+              color: "#ffffff",
               border: "none",
               borderRadius: "8px",
-              cursor: "pointer"
-            }}
-            onClick={() => {
-              if (answer.trim() === "") {
-                alert("Please enter your answer before submitting.");
-                return;
-              }
-
-              const updatedAnswers = [...answers, answer];
-
-              setAnswers(updatedAnswers);
-              setAnswer("");
-
-              if (questionNumber < questions.length) {
-                setQuestionNumber(questionNumber + 1);
-              } else {
-                setCompleted(true);
-
-                navigate("/result", {
-                  state: {
-                    score: updatedAnswers.filter(
-                      (ans) => ans.trim() !== ""
-                    ).length,
-                    answers: updatedAnswers,
-                    questions: questions
-                  }
-                });
-              }
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
+              fontSize: "15px",
+              fontWeight: "600"
             }}
           >
-            Submit Answer
+            {saving
+              ? "Saving Interview..."
+              : questionNumber === questions.length
+              ? "Finish Interview"
+              : "Submit Answer"}
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
