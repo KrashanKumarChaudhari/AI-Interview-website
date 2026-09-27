@@ -162,7 +162,10 @@ if (!userId) {
         lineHeight: "1.6"
       }}
     >
-      <strong>Your Answer:</strong> {answer}
+     <strong>Your Answer:</strong>{" "}
+{answer.trim() !== ""
+  ? answer
+  : "Not answered (Skipped)"}
     </p>
   </div>
 ))}

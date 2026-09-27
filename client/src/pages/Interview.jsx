@@ -20,6 +20,7 @@ function Interview() {
   const [questionNumber, setQuestionNumber] = useState(1);
 
   // Store all answers given during the interview
+  // Empty string means that the question was skipped
   const [answers, setAnswers] = useState([]);
 
   // Track whether the interview is currently being saved
@@ -86,14 +87,12 @@ function Interview() {
     (ans) => ans.trim() !== ""
   ).length;
 
-  // Handle submitting the current answer
-  const handleSubmitAnswer = async () => {
-    // Prevent submitting an empty answer
-    if (answer.trim() === "") {
-      alert("Please enter your answer before submitting.");
-      return;
-    }
+  // ==========================================
+  // FINISH INTERVIEW
+  // ==========================================
 
+  // Save the complete interview after the final question
+  const finishInterview = async (updatedAnswers) => {
     // Make sure a logged-in user still exists
     if (!userId) {
       alert("Please login before starting an interview.");
@@ -101,25 +100,11 @@ function Interview() {
       return;
     }
 
-    // Add the current answer to the answers array
-    const updatedAnswers = [...answers, answer.trim()];
-
-    // Update answers state
-    setAnswers(updatedAnswers);
-
-    // Clear the textarea
-    setAnswer("");
-
-    // If more questions are remaining, move to the next question
-    if (questionNumber < questions.length) {
-      setQuestionNumber(questionNumber + 1);
-      return;
-    }
-
-    // Final question has been submitted
+    // Start saving process
     setSaving(true);
 
     // Calculate final score
+    // Skipped questions contain "" and therefore get 0 points
     const finalScore = updatedAnswers.filter(
       (ans) => ans.trim() !== ""
     ).length;
@@ -152,6 +137,7 @@ function Interview() {
             questions: questions,
 
             // Save all user answers
+            // Empty string represents a skipped question
             answers: updatedAnswers
           })
         }
@@ -199,6 +185,77 @@ function Interview() {
 
       setSaving(false);
     }
+  };
+
+  // ==========================================
+  // SUBMIT ANSWER
+  // ==========================================
+
+  const handleSubmitAnswer = async () => {
+    // Prevent submitting an empty answer
+    if (answer.trim() === "") {
+      alert("Please enter your answer before submitting.");
+      return;
+    }
+
+    // Add the current answer to the answers array
+    const updatedAnswers = [
+      ...answers,
+      answer.trim()
+    ];
+
+    // Update answers state
+    setAnswers(updatedAnswers);
+
+    // Clear the textarea
+    setAnswer("");
+
+    // If more questions are remaining, move to the next question
+    if (questionNumber < questions.length) {
+      setQuestionNumber(questionNumber + 1);
+      return;
+    }
+
+    // Final question has been submitted
+    await finishInterview(updatedAnswers);
+  };
+
+  // ==========================================
+  // SKIP CURRENT QUESTION
+  // ==========================================
+
+  const handleSkipQuestion = async () => {
+    // Ask the user for confirmation before skipping
+    const confirmSkip = window.confirm(
+      "Are you sure you want to skip this question?"
+    );
+
+    // If user clicks Cancel, stay on the same question
+    if (!confirmSkip) {
+      return;
+    }
+
+    // Store an empty answer for the skipped question
+    const updatedAnswers = [
+      ...answers,
+      ""
+    ];
+
+    // Update answers state
+    setAnswers(updatedAnswers);
+
+    // Clear the textarea
+    setAnswer("");
+
+    // If more questions are remaining, move to the next question
+    if (questionNumber < questions.length) {
+      setQuestionNumber(questionNumber + 1);
+      return;
+    }
+
+    // If the final question is skipped,
+    // save the complete interview
+    await finishInterview(updatedAnswers);
   };
 
   return (
@@ -347,13 +404,37 @@ function Interview() {
           }}
         />
 
-        {/* Submit answer button */}
+        {/* Submit and Skip buttons */}
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end"
+            justifyContent: "flex-end",
+            gap: "12px"
           }}
         >
+          {/* Skip current question */}
+          <button
+            onClick={handleSkipQuestion}
+            disabled={saving}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: saving
+                ? "#64748b"
+                : "#475569",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
+              fontSize: "15px",
+              fontWeight: "600"
+            }}
+          >
+            Skip Question
+          </button>
+
+          {/* Submit answer / Finish interview */}
           <button
             onClick={handleSubmitAnswer}
             disabled={saving}
