@@ -34,7 +34,12 @@ if (!userId) {
 
   useEffect(() => {
     // Fetch details of the selected interview attempt
-    fetch(`http://localhost:5000/api/interviews/details/${id}`)
+  fetch(`http://localhost:5000/api/interviews/details/${id}`, {
+  headers: {
+    // Send the logged-in user's JWT token to the backend
+    Authorization: "Bearer " + localStorage.getItem("token")
+  }
+})
       .then((response) => {
         if (!response.ok) {
           throw new Error("Interview details not found");
