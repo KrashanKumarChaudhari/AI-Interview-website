@@ -16,6 +16,21 @@ function InterviewDetails() {
 
   // Store error message if API request fails
   const [error, setError] = useState("");
+  // Get the logged-in user from localStorage
+const user = JSON.parse(localStorage.getItem("user"));
+const userId = user?.id;
+
+// Protect this page from logged-out users
+useEffect(() => {
+  if (!userId) {
+    navigate("/login", { replace: true });
+  }
+}, [userId, navigate]);
+
+// Don't show the page if user is logged out
+if (!userId) {
+  return null;
+}
 
   useEffect(() => {
     // Fetch details of the selected interview attempt

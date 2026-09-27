@@ -396,6 +396,56 @@ app.post("/api/interviews", async (req, res) => {
 });
 
 
+// ==========================================
+// GET INTERVIEW PERFORMANCE STATISTICS
+// ==========================================
+
+app.get("/api/interviews/stats/:userId", async (req, res) => {
+  try {
+    // Get user ID from the URL
+    const { userId } = req.params;
+
+    // Validate user ID
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({
+        message: "Invalid user ID."
+      });
+    }
+
+    // Calculate overall interview statistics
+    const result = await pool.query(
+      `SELECT
+         COUNT(*) AS total_interviews,
+         COALESCE(ROUND(AVG(score), 2), 0) AS average_score,
+         COALESCE(MAX(score), 0) AS best_score,
+         COALESCE(SUM(total_questions), 0) AS total_questions
+       FROM interviews
+       WHERE user_id = $1`,
+      [Number(userId)]
+    );
+
+    // Send statistics to frontend
+    res.json({
+      total_interviews: Number(result.rows[0].total_interviews),
+      average_score: Number(result.rows[0].average_score),
+      best_score: Number(result.rows[0].best_score),
+      total_questions: Number(result.rows[0].total_questions)
+    });
+
+  } catch (error) {
+    // Show database error in backend terminal
+    console.error(
+      "Error fetching interview statistics:",
+      error
+    );
+
+    res.status(500).json({
+      message: "Failed to fetch interview statistics."
+    });
+  }
+});
+
+
 // ==================================================
 // GET USER INTERVIEW HISTORY
 // ==================================================

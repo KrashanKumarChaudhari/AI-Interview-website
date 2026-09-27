@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function Interview() {
@@ -6,7 +6,8 @@ function Interview() {
   const navigate = useNavigate();
 
   // Get interview setup data from InterviewSetup page
-  const { role, experience, type, questions } = location.state || {};
+  const { role, experience, type, questions } =
+    location.state || {};
 
   // Get logged-in user information from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
@@ -23,6 +24,26 @@ function Interview() {
 
   // Track whether the interview is currently being saved
   const [saving, setSaving] = useState(false);
+
+  // ==========================================
+  // LOGIN PROTECTION
+  // ==========================================
+
+  useEffect(() => {
+    // If there is no logged-in user, redirect to Login
+    if (!userId) {
+      navigate("/login", { replace: true });
+    }
+  }, [userId, navigate]);
+
+  // If user is not logged in, don't render the interview
+  if (!userId) {
+    return null;
+  }
+
+  // ==========================================
+  // INTERVIEW DATA CHECK
+  // ==========================================
 
   // If interview setup data is missing, show an error
   if (!questions || questions.length === 0) {
@@ -73,7 +94,7 @@ function Interview() {
       return;
     }
 
-    // Make sure a logged-in user exists
+    // Make sure a logged-in user still exists
     if (!userId) {
       alert("Please login before starting an interview.");
       navigate("/login");

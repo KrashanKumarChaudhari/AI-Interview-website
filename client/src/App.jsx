@@ -1,10 +1,11 @@
 // Interview details page
-import InterviewDetails from "./pages/InterviewDetails";
 import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import Result from "./pages/Result";
 import Interview from "./pages/Interview";
 import Login from "./pages/Login";
+import InterviewDetails from "./pages/InterviewDetails";
+import Dashboard from "./pages/Dashboard";
 
 
 import {
@@ -121,28 +122,56 @@ function Home() {
   </Link>
 )}
 
-        {isLoggedIn && (
-  <Link
-    to="/profile"
-    style={{
-      textDecoration: "none"
-    }}
-  >
-    <button
-     style={{
-  color: "#ffffff",
-  backgroundColor: "#4f46e5",
-  fontWeight: "600",
-  border: "none",
-  borderRadius: "8px",
-  padding: "10px 20px",
-  marginLeft: "10px",
-  cursor: "pointer"
-}}
+       {/* LOGGED-IN USER OPTIONS */}
+
+{isLoggedIn && (
+  <>
+    {/* Dashboard button */}
+    <Link
+      to="/dashboard"
+      style={{
+        textDecoration: "none"
+      }}
     >
-      Profile
-    </button>
-  </Link>
+      <button
+        style={{
+          color: "#ffffff",
+          backgroundColor: "#4f46e5",
+          fontWeight: "600",
+          border: "none",
+          borderRadius: "8px",
+          padding: "10px 20px",
+          marginLeft: "10px",
+          cursor: "pointer"
+        }}
+      >
+        Dashboard
+      </button>
+    </Link>
+
+    {/* Profile button */}
+    <Link
+      to="/profile"
+      style={{
+        textDecoration: "none"
+      }}
+    >
+      <button
+        style={{
+          color: "#ffffff",
+          backgroundColor: "#4f46e5",
+          fontWeight: "600",
+          border: "none",
+          borderRadius: "8px",
+          padding: "10px 20px",
+          marginLeft: "10px",
+          cursor: "pointer"
+        }}
+      >
+        Profile
+      </button>
+    </Link>
+  </>
 )}
 
         </div>
@@ -497,10 +526,18 @@ function App() {
 
             <Route path="/profile" element={<Profile />} />
             
-  /* Route for viewing a single interview's details */
+ {/* Route for viewing a single interview's details */}
             <Route 
               path="/interview-details/:id"
               element={<InterviewDetails />}
+            />  
+
+            {/* Interview performance dashboard */}
+
+            <Route 
+              path="/dashboard"
+              element={<Dashboard />}
+
             />  
 
       </Routes>

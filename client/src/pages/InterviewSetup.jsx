@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function InterviewSetup() {
@@ -13,6 +13,21 @@ function InterviewSetup() {
 
   // Used to navigate to the interview page
   const navigate = useNavigate();
+  // Get the logged-in user from localStorage
+const user = JSON.parse(localStorage.getItem("user"));
+const userId = user?.id;
+
+// Redirect logged-out users to Login page
+useEffect(() => {
+  if (!userId) {
+    navigate("/login", { replace: true });
+  }
+}, [userId, navigate]);
+
+// Don't render Interview Setup for logged-out users
+if (!userId) {
+  return null;
+}
 
   // Questions used for the current interview
   const questions = [

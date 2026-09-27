@@ -1,8 +1,25 @@
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function Result() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Check whether the user is logged in
+const user = JSON.parse(localStorage.getItem("user"));
+const userId = user?.id;
+
+// Redirect logged-out users to the Login page
+useEffect(() => {
+  if (!userId) {
+    navigate("/login", { replace: true });
+  }
+}, [userId, navigate]);
+
+// Don't render the Result page for logged-out users
+if (!userId) {
+  return null;
+}
 
   const { score, answers, questions } = location.state || {};
 
