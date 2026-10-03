@@ -25,7 +25,249 @@ function Interview() {
 
   // Track whether the interview is currently being saved
   const [saving, setSaving] = useState(false);
+  // ==========================================
+// VOICE ANSWER
+// User microphone se answer bol sakega.
+// Speech automatically text me convert hogi.
+// ==========================================
 
+// Check whether browser speech recognition support karta hai
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+// Voice recognition object
+const [recognition, setRecognition] = useState(null);
+
+// Track whether microphone currently listening hai
+const [isListening, setIsListening] = useState(false);
+
+// ==========================================
+// INITIALIZE VOICE RECOGNITION
+// Browser ke speech recognition ko setup karta hai.
+// ==========================================
+
+useEffect(() => {
+  // Agar browser speech recognition support nahi karta
+  if (!SpeechRecognition) {
+    console.log(
+      "Speech recognition is not supported in this browser."
+    );
+    return;
+  }
+
+  // Speech recognition ka new object banana
+  const speechRecognition = new SpeechRecognition();
+
+  // User Hindi/English dono bol sakta hai.
+  // Abhi English interview ke liye English set kar rahe hain.
+  speechRecognition.lang = "en-IN";
+
+  // Continuous false ka matlab:
+  // ek baar recognition start hone par speech capture karega
+  // aur pause hone par result dega.
+  speechRecognition.continuous = true;
+
+  // Interim results false:
+  // final converted text hi milega.
+  speechRecognition.interimResults = false;
+
+  // Recognition object ko state me save karna
+  setRecognition(speechRecognition);
+
+}, []);
+
+// ==========================================
+// VOICE RESULT
+// User jo bolega usko text me convert karega.
+// ==========================================
+
+// ==========================================
+// VOICE RESULT
+// User jo bolega usko text me convert karega.
+// Multiple recognition results ko repeat nahi karega.
+// ==========================================
+
+useEffect(() => {
+  // Agar recognition available nahi hai
+  if (!recognition) {
+    return;
+  }
+
+  // Speech recognition se result milne par
+  recognition.onresult = (event) => {
+    // Saare final results ko collect karna
+    let finalTranscript = "";
+
+    for (
+      let i = event.resultIndex;
+      i < event.results.length;
+      i++
+    ) {
+      // Sirf final result lena
+      if (event.results[i].isFinal) {
+        finalTranscript +=
+          event.results[i][0].transcript;
+      }
+    }
+
+    // Agar final speech text mila hai
+    if (finalTranscript.trim() !== "") {
+      setAnswer((previousAnswer) => {
+        // Existing written/voice answer ke saath
+        // naya spoken text add karna
+        if (previousAnswer.trim() !== "") {
+          return (
+            previousAnswer.trim() +
+            " " +
+            finalTranscript.trim()
+          );
+        }
+
+        return finalTranscript.trim();
+      });
+    }
+  };
+
+  // Agar recognition me error aaye
+  recognition.onerror = (event) => {
+    console.error(
+      "Speech recognition error:",
+      event.error
+    );
+
+    // Sirf serious error par listening stop
+    if (
+      event.error === "not-allowed" ||
+      event.error === "service-not-allowed"
+    ) {
+      setIsListening(false);
+    }
+  };
+
+  // Recognition automatically end ho to
+  // state ko false nahi karna, kyunki continuous mode hai.
+  recognition.onend = () => {
+    console.log("Voice recognition ended.");
+  };
+
+  // Component cleanup
+  return () => {
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+  };
+}, [recognition]);
+
+// ==========================================
+// START / STOP VOICE RECOGNITION
+// Microphone ko start aur stop karega.
+// ==========================================
+
+const handleVoiceAnswer = () => {
+  // Browser voice recognition support check
+  if (!SpeechRecognition) {
+    alert(
+      "Voice input is not supported in this browser. Please use Google Chrome."
+    );
+    return;
+  }
+
+  // Agar recognition object available nahi hai
+  if (!recognition) {
+    alert("Voice recognition is not ready. Please try again.");
+    return;
+  }
+
+  // Agar microphone already listening hai
+  // to recognition stop kar do
+  if (isListening) {
+    recognition.stop();
+    setIsListening(false);
+    return;
+  }
+
+  // Microphone start karna
+  recognition.start();
+
+  // Listening status ON
+  setIsListening(true);
+};
+
+
+  // ==========================================
+  // QUESTION VOICE
+  // Question change hone par browser question
+  // ko automatically voice me bolega.
+  // ==========================================
+
+  // ==========================================
+// QUESTION VOICE + VIDEO CONTROL
+// Question start hote hi video play hoga.
+// Question ki voice khatam hote hi video pause hoga.
+// ==========================================
+
+useEffect(() => {
+  // Agar questions available nahi hain to kuch nahi karna
+  if (!questions || questions.length === 0) {
+    return;
+  }
+
+  // Current question ko get karna
+  const currentQuestion =
+    questions[questionNumber - 1];
+
+  // Pehle se chal rahi speech ko stop karna
+  window.speechSynthesis.cancel();
+
+  // Video element ko find karna
+  const video = document.querySelector(
+    "video"
+  );
+
+  // Video ko question ke beginning se start karna
+  if (video) {
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }
+
+  // Current question ke liye speech banana
+  const speech = new SpeechSynthesisUtterance(
+    currentQuestion
+  );
+
+  // Voice ki speed
+  speech.rate = 0.9;
+
+  // Voice ka pitch
+  speech.pitch = 1;
+
+  // Voice ki volume
+  speech.volume = 1;
+
+  // ==========================================
+  // VOICE KHATAM HONE PAR VIDEO PAUSE
+  // ==========================================
+
+  speech.onend = () => {
+    if (video) {
+      video.pause();
+    }
+  };
+
+  // Question ko bolna
+  window.speechSynthesis.speak(speech);
+
+  // Question change hone par previous
+  // speech aur video ko stop karna
+  return () => {
+    window.speechSynthesis.cancel();
+
+    if (video) {
+      video.pause();
+    }
+  };
+}, [questionNumber, questions]);
   // ==========================================
   // LOGIN PROTECTION
   // ==========================================
@@ -102,6 +344,9 @@ function Interview() {
 
     // Start saving process
     setSaving(true);
+
+    // Stop any currently playing question voice
+    window.speechSynthesis.cancel();
 
     // Calculate final score
     // Skipped questions contain "" and therefore get 0 points
@@ -198,6 +443,9 @@ function Interview() {
       return;
     }
 
+    // Stop question voice when user submits the answer
+    window.speechSynthesis.cancel();
+
     // Add the current answer to the answers array
     const updatedAnswers = [
       ...answers,
@@ -234,6 +482,9 @@ function Interview() {
     if (!confirmSkip) {
       return;
     }
+
+    // Stop question voice when skipping
+    window.speechSynthesis.cancel();
 
     // Store an empty answer for the skipped question
     const updatedAnswers = [
@@ -360,6 +611,36 @@ function Interview() {
           </div>
         </div>
 
+        {/* ==========================================
+            AI INTERVIEWER VIDEO
+            The key forces the video element to
+            restart whenever the question changes.
+            ========================================== */}
+        <div
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            backgroundColor: "#020617",
+            borderRadius: "14px",
+            overflow: "hidden",
+            marginBottom: "20px",
+            border: "1px solid #334155"
+          }}
+        >
+          <video
+            key={questionNumber}
+            src="/interviewer/interviewer.mp4"
+            autoPlay
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block"
+            }}
+          />
+        </div>
+
         {/* Current interview question */}
         <div
           style={{
@@ -370,6 +651,18 @@ function Interview() {
             border: "1px solid #334155"
           }}
         >
+          <p
+            style={{
+              margin: "0 0 10px",
+              color: "#a5b4fc",
+              fontSize: "14px",
+              fontWeight: "600",
+              textTransform: "uppercase"
+            }}
+          >
+            Interviewer Question
+          </p>
+
           <h2
             style={{
               margin: 0,
@@ -380,6 +673,43 @@ function Interview() {
             {questions[questionNumber - 1]}
           </h2>
         </div>
+
+        {/* ==========================================
+    VOICE ANSWER BUTTON
+    User microphone se answer bol sakta hai.
+    ========================================== */}
+
+<div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    marginBottom: "10px"
+  }}
+>
+  <button
+    type="button"
+    onClick={handleVoiceAnswer}
+    disabled={saving}
+    style={{
+      padding: "10px 18px",
+      backgroundColor: isListening
+        ? "#dc2626"
+        : "#4f46e5",
+      color: "#ffffff",
+      border: "none",
+      borderRadius: "8px",
+      cursor: saving
+        ? "not-allowed"
+        : "pointer",
+      fontSize: "14px",
+      fontWeight: "600"
+    }}
+  >
+    {isListening
+      ? "🛑 Stop Speaking"
+      : "🎤 Speak Answer"}
+  </button>
+</div>
 
         {/* Answer input */}
         <textarea
