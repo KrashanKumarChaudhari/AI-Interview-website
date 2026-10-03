@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const express = require("express");
+
 // Gemini AI SDK
 const { GoogleGenAI } = require("@google/genai");
 
@@ -18,15 +19,25 @@ const { PDFParse } = require("pdf-parse");
 
 require("dotenv").config();
 
-// Gemini AI client create karna
+// ==========================================
+// GEMINI AI CLIENT
+// ==========================================
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
 
 const app = express();
 
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
 // Frontend (5173) ko backend (5000) se request karne ki permission
 app.use(cors());
+
+// JSON request body ko read karne ke liye
+app.use(express.json());
 
 // ==========================================
 // RESUME UPLOAD CONFIGURATION
@@ -40,8 +51,12 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    // Original file name ko preserve kar rahe hain
-    cb(null, Date.now() + "-" + file.originalname);
+    // Original file name ko preserve karte hue
+    // unique timestamp add karna
+    cb(
+      null,
+      Date.now() + "-" + file.originalname
+    );
   }
 });
 
@@ -56,10 +71,15 @@ const upload = multer({
 });
 
 // ==========================================
-// RESUME UPLOAD API
+// BASIC TEST ROUTE
 // ==========================================
 
-// Resume file receive karne ke liye API
+app.get("/", (req, res) => {
+  res.send(
+    "AI Interview Backend is running!"
+  );
+});
+
 // ==========================================
 // RESUME UPLOAD + PDF TEXT EXTRACTION API
 // ==========================================
@@ -76,40 +96,73 @@ app.post(
         });
       }
 
-      // Uploaded PDF ko read karna
+      // File system module
       const fs = require("fs");
 
-      // PDF file ka data read karna
-      const pdfBuffer = fs.readFileSync(req.file.path);
+      // Uploaded PDF ko read karna
+      const pdfBuffer = fs.readFileSync(
+        req.file.path
+      );
+
+      // ==========================================
+      // PDF PARSER
+      // ==========================================
+
+      const parser = new PDFParse({
+        data: pdfBuffer
+      });
 
       // PDF se text extract karna
-     // PDF parser ka instance create karna
-const parser = new PDFParse({
-  data: pdfBuffer
-});
-
-// PDF se text extract karna
-const pdfData = await parser.getText();
+      const pdfData = await parser.getText();
 
       // Extracted resume text
       const resumeText = pdfData.text;
 
-      // Console me extracted text check karna
-      console.log("=================================");
-      console.log("Resume uploaded successfully");
-      console.log("File:", req.file.originalname);
-      console.log("Extracted Resume Text:");
+      // ==========================================
+      // DEBUG INFORMATION
+      // ==========================================
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Resume uploaded successfully"
+      );
+
+      console.log(
+        "File:",
+        req.file.originalname
+      );
+
+      console.log(
+        "Extracted Resume Text:"
+      );
+
       console.log(resumeText);
-      console.log("=================================");
 
-      // Frontend ko response bhejna
+      console.log(
+        "================================="
+      );
+
+      // ==========================================
+      // FRONTEND RESPONSE
+      // ==========================================
+
       res.json({
-        message: "Resume uploaded and text extracted successfully.",
-        fileName: req.file.filename,
-        originalName: req.file.originalname,
-        filePath: req.file.path,
+        message:
+          "Resume uploaded and text extracted successfully.",
 
-        // Extracted resume text frontend ko bhej rahe hain
+        fileName:
+          req.file.filename,
+
+        originalName:
+          req.file.originalname,
+
+        filePath:
+          req.file.path,
+
+        // Extracted resume text frontend ko bhejna
         resumeText: resumeText
       });
 
@@ -121,166 +174,209 @@ const pdfData = await parser.getText();
       );
 
       res.status(500).json({
-        message: "Failed to process resume.",
-        error: error.message
+        message:
+          "Failed to process resume.",
+
+        error:
+          error.message
       });
     }
   }
 );
 
-// Allow frontend requests from React/Vite
-app.use(cors());
-
-// Allow JSON data in request body
-app.use(express.json());
-
-
-// ===============================
-// PostgreSQL Database Connection
-// ===============================
+// ==========================================
+// POSTGRESQL DATABASE CONNECTION
+// ==========================================
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString:
+    process.env.DATABASE_URL,
+
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-
-// ===============================
-// Basic Test Route
-// ===============================
-
-app.get("/", (req, res) => {
-  res.send("AI Interview Backend is running!");
-});
-
-
-// ===============================
-// Database Test Route
-// ===============================
+// ==========================================
+// DATABASE TEST ROUTE
+// ==========================================
 
 app.get("/db-test", async (req, res) => {
   try {
-    const result = await pool.query("SELECT NOW()");
+    const result =
+      await pool.query(
+        "SELECT NOW()"
+      );
 
     res.json({
-      message: "Database connected successfully!",
-      time: result.rows[0].now
+      message:
+        "Database connected successfully!",
+
+      time:
+        result.rows[0].now
     });
+
   } catch (error) {
-    console.error("Database connection error:", error.message);
+    console.error(
+      "Database connection error:",
+      error.message
+    );
 
     res.status(500).json({
-      message: "Database connection failed."
+      message:
+        "Database connection failed."
     });
   }
 });
 
-
-// ===============================
+// ==========================================
 // SIGNUP
-// ===============================
+// ==========================================
 
 app.post("/signup", async (req, res) => {
   try {
     // Get signup information from frontend
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password
+    } = req.body;
 
     // Check required fields
-    if (!name || !email || !password) {
+    if (
+      !name ||
+      !email ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "All fields are required."
+        message:
+          "All fields are required."
       });
     }
 
-    // Convert password into a secure hashed password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Convert password into secure hash
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10
+      );
 
     // Save new user in PostgreSQL
-    const result = await pool.query(
-      `INSERT INTO users (name, email, password)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, email, created_at`,
-      [name, email, hashedPassword]
-    );
+    const result =
+      await pool.query(
+        `INSERT INTO users
+         (name, email, password)
+         VALUES ($1, $2, $3)
+         RETURNING id, name, email, created_at`,
+        [
+          name,
+          email,
+          hashedPassword
+        ]
+      );
 
-    // Send created user information to frontend
+    // Send created user information
     res.status(201).json({
-      message: "Account created successfully!",
-      user: result.rows[0]
+      message:
+        "Account created successfully!",
+
+      user:
+        result.rows[0]
     });
 
   } catch (error) {
-    console.error("Signup error:", error.message);
+    console.error(
+      "Signup error:",
+      error.message
+    );
 
     res.status(500).json({
-      message: "Signup failed."
+      message:
+        "Signup failed."
     });
   }
 });
 
-
-// ===============================
+// ==========================================
 // LOGIN
-// ===============================
+// ==========================================
 
 app.post("/login", async (req, res) => {
   try {
-    // Get login information from frontend
-    const { email, password } = req.body;
+    // Get login information
+    const {
+      email,
+      password
+    } = req.body;
 
     // Check required fields
-    if (!email || !password) {
+    if (
+      !email ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "Email and password are required."
+        message:
+          "Email and password are required."
       });
     }
 
     // Find user by email
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
+    const result =
+      await pool.query(
+        "SELECT * FROM users WHERE email = $1",
+        [email]
+      );
 
     // User does not exist
-    if (result.rows.length === 0) {
+    if (
+      result.rows.length === 0
+    ) {
       return res.status(401).json({
-        message: "Invalid email or password."
+        message:
+          "Invalid email or password."
       });
     }
 
-    const user = result.rows[0];
+    const user =
+      result.rows[0];
 
-    // Compare entered password with hashed password
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    // Compare entered password with hash
+    const passwordMatch =
+      await bcrypt.compare(
+        password,
+        user.password
+      );
 
-    // Password is incorrect
+    // Password incorrect
     if (!passwordMatch) {
       return res.status(401).json({
-        message: "Invalid email or password."
+        message:
+          "Invalid email or password."
       });
     }
 
     // Create JWT token
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1h"
-      }
-    );
+    const token =
+      jwt.sign(
+        {
+          id: user.id,
+          email: user.email
+        },
 
-    // Send token and user information to frontend
+        process.env.JWT_SECRET,
+
+        {
+          expiresIn: "1h"
+        }
+      );
+
+    // Send token and user information
     res.json({
-      message: "Login successful!",
+      message:
+        "Login successful!",
+
       token: token,
+
       user: {
         id: user.id,
         name: user.name,
@@ -289,41 +385,53 @@ app.post("/login", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login error:", error.message);
+    console.error(
+      "Login error:",
+      error.message
+    );
 
     res.status(500).json({
-      message: "Login failed."
+      message:
+        "Login failed."
     });
   }
 });
 
-
-// ===============================
+// ==========================================
 // JWT TOKEN VERIFICATION
-// ===============================
+// ==========================================
 
-function verifyToken(req, res, next) {
+function verifyToken(
+  req,
+  res,
+  next
+) {
   // Get Authorization header
-  const authHeader = req.headers.authorization;
+  const authHeader =
+    req.headers.authorization;
 
   // Token does not exist
   if (!authHeader) {
     return res.status(401).json({
-      message: "Access denied. No token provided."
+      message:
+        "Access denied. No token provided."
     });
   }
 
-  // Extract token from "Bearer TOKEN"
-  const token = authHeader.split(" ")[1];
+  // Extract token from:
+  // Bearer TOKEN
+  const token =
+    authHeader.split(" ")[1];
 
   try {
     // Verify JWT token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
+    const decoded =
+      jwt.verify(
+        token,
+        process.env.JWT_SECRET
+      );
 
-    // Store decoded user information in request
+    // Store decoded user information
     req.user = decoded;
 
     // Continue to protected route
@@ -331,413 +439,841 @@ function verifyToken(req, res, next) {
 
   } catch (error) {
     return res.status(401).json({
-      message: "Invalid or expired token."
+      message:
+        "Invalid or expired token."
     });
   }
 }
 
-
-// ===============================
+// ==========================================
 // PROTECTED PROFILE ROUTE
-// ===============================
+// ==========================================
 
-app.get("/profile", verifyToken, async (req, res) => {
-  try {
-    // Get logged-in user's information
-    const result = await pool.query(
-      "SELECT id, name, email FROM users WHERE id = $1",
-      [req.user.id]
-    );
+app.get(
+  "/profile",
+  verifyToken,
+  async (req, res) => {
+    try {
+      // Get logged-in user's information
+      const result =
+        await pool.query(
+          `SELECT id, name, email
+           FROM users
+           WHERE id = $1`,
+          [req.user.id]
+        );
 
-    // User not found
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "User not found."
+      // User not found
+      if (
+        result.rows.length === 0
+      ) {
+        return res.status(404).json({
+          message:
+            "User not found."
+        });
+      }
+
+      // Send profile information
+      res.json({
+        message:
+          "Protected profile accessed successfully!",
+
+        user:
+          result.rows[0]
+      });
+
+    } catch (error) {
+      console.error(
+        "Profile error:",
+        error.message
+      );
+
+      res.status(500).json({
+        message:
+          "Profile fetch failed."
       });
     }
-
-    // Send profile information
-    res.json({
-      message: "Protected profile accessed successfully!",
-      user: result.rows[0]
-    });
-
-  } catch (error) {
-    console.error("Profile error:", error.message);
-
-    res.status(500).json({
-      message: "Profile fetch failed."
-    });
   }
-});
+);
 
-
-// ==================================================
+// ==========================================
 // SAVE COMPLETE INTERVIEW RESULT
-// ==================================================
+// ==========================================
 
-app.post("/api/interviews", async (req, res) => {
-  try {
-    // Get complete interview data from frontend
-    const {
-      user_id,
-      role,
-      experience,
-      interview_type,
-      score,
-      total_questions,
-      questions,
-      answers
-    } = req.body;
-
-
-    // -------------------------------
-    // Validate required interview data
-    // -------------------------------
-
-    if (
-      !user_id ||
-      !role ||
-      !experience ||
-      !interview_type ||
-      score === undefined ||
-      total_questions === undefined
-    ) {
-      return res.status(400).json({
-        message: "Required interview data is missing."
-      });
-    }
-
-
-    // -------------------------------
-    // Validate questions and answers
-    // -------------------------------
-
-    if (
-      !Array.isArray(questions) ||
-      !Array.isArray(answers)
-    ) {
-      return res.status(400).json({
-        message: "Questions and answers must be arrays."
-      });
-    }
-
-
-    // -------------------------------
-    // Debug information
-    // -------------------------------
-    // This helps us verify exactly what
-    // the frontend is sending to the backend.
-
-    console.log("=================================");
-    console.log("Saving Interview Result");
-    console.log("User ID:", user_id);
-    console.log("Role:", role);
-    console.log("Experience:", experience);
-    console.log("Interview Type:", interview_type);
-    console.log("Score:", score);
-    console.log("Total Questions:", total_questions);
-    console.log("Questions:", questions);
-    console.log("Answers:", answers);
-    console.log("=================================");
-
-
-    // -------------------------------
-    // Insert interview into database
-    // -------------------------------
-
-    const result = await pool.query(
-      `INSERT INTO interviews
-       (
-         user_id,
-         role,
-         experience,
-         interview_type,
-         score,
-         total_questions,
-         questions,
-         answers
-       )
-       VALUES
-       (
-         $1,
-         $2,
-         $3,
-         $4,
-         $5,
-         $6,
-         $7::jsonb,
-         $8::jsonb
-       )
-       RETURNING *`,
-      [
+app.post(
+  "/api/interviews",
+  async (req, res) => {
+    try {
+      // Get complete interview data
+      const {
         user_id,
         role,
         experience,
         interview_type,
         score,
         total_questions,
+        questions,
+        answers
+      } = req.body;
 
-        // Convert JavaScript arrays into JSON strings
-        JSON.stringify(questions),
-        JSON.stringify(answers)
-      ]
-    );
+      // ==========================================
+      // VALIDATE INTERVIEW DATA
+      // ==========================================
 
+      if (
+        !user_id ||
+        !role ||
+        !experience ||
+        !interview_type ||
+        score === undefined ||
+        total_questions === undefined
+      ) {
+        return res.status(400).json({
+          message:
+            "Required interview data is missing."
+        });
+      }
 
-    // -------------------------------
-    // Confirm successful database save
-    // -------------------------------
+      // ==========================================
+      // VALIDATE QUESTIONS AND ANSWERS
+      // ==========================================
 
-    console.log(
-      "Interview saved successfully. Database ID:",
-      result.rows[0].id
-    );
+      if (
+        !Array.isArray(questions) ||
+        !Array.isArray(answers)
+      ) {
+        return res.status(400).json({
+          message:
+            "Questions and answers must be arrays."
+        });
+      }
 
+      // ==========================================
+      // DEBUG INFORMATION
+      // ==========================================
 
-    // Send saved interview back to frontend
-    res.status(201).json({
-      message: "Interview result saved successfully",
-      interview: result.rows[0]
-    });
+      console.log(
+        "================================="
+      );
 
-  } catch (error) {
+      console.log(
+        "Saving Interview Result"
+      );
 
-    // Show complete database error in backend terminal
-    console.error(
-      "Error saving interview result:",
-      error
-    );
+      console.log(
+        "User ID:",
+        user_id
+      );
 
-    res.status(500).json({
-      message: "Failed to save interview result",
-      error: error.message
-    });
+      console.log(
+        "Role:",
+        role
+      );
+
+      console.log(
+        "Experience:",
+        experience
+      );
+
+      console.log(
+        "Interview Type:",
+        interview_type
+      );
+
+      console.log(
+        "Score:",
+        score
+      );
+
+      console.log(
+        "Total Questions:",
+        total_questions
+      );
+
+      console.log(
+        "Questions:",
+        questions
+      );
+
+      console.log(
+        "Answers:",
+        answers
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // ==========================================
+      // INSERT INTERVIEW INTO DATABASE
+      // ==========================================
+
+      const result =
+        await pool.query(
+          `INSERT INTO interviews
+           (
+             user_id,
+             role,
+             experience,
+             interview_type,
+             score,
+             total_questions,
+             questions,
+             answers
+           )
+           VALUES
+           (
+             $1,
+             $2,
+             $3,
+             $4,
+             $5,
+             $6,
+             $7::jsonb,
+             $8::jsonb
+           )
+           RETURNING *`,
+
+          [
+            user_id,
+            role,
+            experience,
+            interview_type,
+            score,
+            total_questions,
+
+            // Convert arrays into JSON strings
+            JSON.stringify(questions),
+            JSON.stringify(answers)
+          ]
+        );
+
+      // ==========================================
+      // DATABASE SAVE CONFIRMATION
+      // ==========================================
+
+      console.log(
+        "Interview saved successfully. Database ID:",
+        result.rows[0].id
+      );
+
+      // Send saved interview to frontend
+      res.status(201).json({
+        message:
+          "Interview result saved successfully",
+
+        interview:
+          result.rows[0]
+      });
+
+    } catch (error) {
+      // Show complete database error
+      console.error(
+        "Error saving interview result:",
+        error
+      );
+
+      res.status(500).json({
+        message:
+          "Failed to save interview result",
+
+        error:
+          error.message
+      });
+    }
   }
-});
-
+);
 
 // ==========================================
 // GET INTERVIEW PERFORMANCE STATISTICS
 // ==========================================
 
-app.get("/api/interviews/stats/:userId", async (req, res) => {
-  try {
-    // Get user ID from the URL
-    const { userId } = req.params;
+app.get(
+  "/api/interviews/stats/:userId",
+  async (req, res) => {
+    try {
+      // Get user ID from URL
+      const {
+        userId
+      } = req.params;
 
-    // Validate user ID
-    if (!userId || isNaN(Number(userId))) {
-      return res.status(400).json({
-        message: "Invalid user ID."
+      // Validate user ID
+      if (
+        !userId ||
+        isNaN(Number(userId))
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid user ID."
+        });
+      }
+
+      // Calculate interview statistics
+      const result =
+        await pool.query(
+          `SELECT
+             COUNT(*) AS total_interviews,
+             COALESCE(
+               ROUND(AVG(score), 2),
+               0
+             ) AS average_score,
+             COALESCE(
+               MAX(score),
+               0
+             ) AS best_score,
+             COALESCE(
+               SUM(total_questions),
+               0
+             ) AS total_questions
+           FROM interviews
+           WHERE user_id = $1`,
+
+          [Number(userId)]
+        );
+
+      // Send statistics
+      res.json({
+        total_interviews:
+          Number(
+            result.rows[0]
+              .total_interviews
+          ),
+
+        average_score:
+          Number(
+            result.rows[0]
+              .average_score
+          ),
+
+        best_score:
+          Number(
+            result.rows[0]
+              .best_score
+          ),
+
+        total_questions:
+          Number(
+            result.rows[0]
+              .total_questions
+          )
+      });
+
+    } catch (error) {
+      console.error(
+        "Error fetching interview statistics:",
+        error
+      );
+
+      res.status(500).json({
+        message:
+          "Failed to fetch interview statistics."
       });
     }
-
-    // Calculate overall interview statistics
-    const result = await pool.query(
-      `SELECT
-         COUNT(*) AS total_interviews,
-         COALESCE(ROUND(AVG(score), 2), 0) AS average_score,
-         COALESCE(MAX(score), 0) AS best_score,
-         COALESCE(SUM(total_questions), 0) AS total_questions
-       FROM interviews
-       WHERE user_id = $1`,
-      [Number(userId)]
-    );
-
-    // Send statistics to frontend
-    res.json({
-      total_interviews: Number(result.rows[0].total_interviews),
-      average_score: Number(result.rows[0].average_score),
-      best_score: Number(result.rows[0].best_score),
-      total_questions: Number(result.rows[0].total_questions)
-    });
-
-  } catch (error) {
-    // Show database error in backend terminal
-    console.error(
-      "Error fetching interview statistics:",
-      error
-    );
-
-    res.status(500).json({
-      message: "Failed to fetch interview statistics."
-    });
   }
-});
+);
 
-
-// ==================================================
+// ==========================================
 // GET USER INTERVIEW HISTORY
-// ==================================================
+// ==========================================
 
-app.get("/api/interviews/:userId", async (req, res) => {
-  try {
+app.get(
+  "/api/interviews/:userId",
+  async (req, res) => {
+    try {
+      // Get user ID from URL
+      const {
+        userId
+      } = req.params;
 
-    // Get user ID from URL
-    const { userId } = req.params;
+      // Validate user ID
+      if (
+        !userId ||
+        isNaN(Number(userId))
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid user ID."
+        });
+      }
 
+      // ==========================================
+      // FETCH USER INTERVIEWS
+      // ==========================================
+      //
+      // Same role ke interviews ko
+      // separate attempts me count karega.
+      //
+      // Oldest = Attempt 1
+      // Newest = highest attempt number
+      // ==========================================
 
-    // -------------------------------
-    // Validate user ID
-    // -------------------------------
+      const result =
+        await pool.query(
+          `SELECT
+             *,
+             ROW_NUMBER() OVER (
+               PARTITION BY user_id, role
+               ORDER BY created_at ASC, id ASC
+             ) AS attempt_number
+           FROM interviews
+           WHERE user_id = $1
+           ORDER BY created_at DESC, id DESC`,
 
-    if (!userId || isNaN(Number(userId))) {
-      return res.status(400).json({
-        message: "Invalid user ID."
+          [Number(userId)]
+        );
+
+      // Send interview history
+      res.json(
+        result.rows
+      );
+
+    } catch (error) {
+      console.error(
+        "Error fetching interview history:",
+        error
+      );
+
+      res.status(500).json({
+        message:
+          "Failed to fetch interview history"
       });
     }
-
-
-    // -------------------------------
-    // Fetch user's interviews
-    //
-    // ROW_NUMBER creates:
-    // Attempt 1
-    // Attempt 2
-    // Attempt 3
-    //
-    // Same role is counted separately.
-    // Oldest attempt = Attempt 1
-    // Newest attempt = highest attempt number.
-    // -------------------------------
-
-    const result = await pool.query(
-      `SELECT
-         *,
-         ROW_NUMBER() OVER (
-           PARTITION BY user_id, role
-           ORDER BY created_at ASC, id ASC
-         ) AS attempt_number
-       FROM interviews
-       WHERE user_id = $1
-       ORDER BY created_at DESC, id DESC`,
-      [Number(userId)]
-    );
-
-
-    // Send interview history to frontend
-    res.json(result.rows);
-
-  } catch (error) {
-
-    console.error(
-      "Error fetching interview history:",
-      error
-    );
-
-    res.status(500).json({
-      message: "Failed to fetch interview history"
-    });
   }
-});
+);
 
-
-// ==================================================
+// ==========================================
 // GET SINGLE INTERVIEW DETAILS
-// ==================================================
-
+// Only logged-in user's interview can be viewed
 // ==========================================
-// GET SINGLE INTERVIEW DETAILS
-// Only the logged-in user's interview can be viewed
-// ==========================================
-app.get("/api/interviews/details/:id", verifyToken, async (req, res) => {
-  try {
 
-    // Get interview ID from the URL
-    const { id } = req.params;
+app.get(
+  "/api/interviews/details/:id",
+  verifyToken,
+  async (req, res) => {
+    try {
+      // Get interview ID
+      const {
+        id
+      } = req.params;
 
-    // Get logged-in user ID from the verified JWT token
-    const userId = req.user.id;
+      // Get logged-in user ID
+      const userId =
+        req.user.id;
 
-    // Validate interview ID
-    if (!id || isNaN(Number(id))) {
-      return res.status(400).json({
-        message: "Invalid interview ID."
+      // Validate interview ID
+      if (
+        !id ||
+        isNaN(Number(id))
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid interview ID."
+        });
+      }
+
+      // Find interview belonging to logged-in user
+      const result =
+        await pool.query(
+          `SELECT *
+           FROM interviews
+           WHERE id = $1
+           AND user_id = $2`,
+
+          [
+            Number(id),
+            userId
+          ]
+        );
+
+      // Interview not found
+      if (
+        result.rows.length === 0
+      ) {
+        return res.status(404).json({
+          message:
+            "Interview not found."
+        });
+      }
+
+      // Send complete interview details
+      res.json(
+        result.rows[0]
+      );
+
+    } catch (error) {
+      console.error(
+        "Error fetching interview details:",
+        error
+      );
+
+      res.status(500).json({
+        message:
+          "Failed to fetch interview details."
       });
     }
+  }
+);
 
-    // Find the interview only if it belongs to the logged-in user
-    const result = await pool.query(
-      `SELECT *
-       FROM interviews
-       WHERE id = $1
-       AND user_id = $2`,
-      [Number(id), userId]
-    );
+// ==========================================
+// GEMINI API CONNECTION TEST
+// ==========================================
 
-    // Interview not found or belongs to another user
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Interview not found."
+app.get(
+  "/api/test-gemini",
+  async (req, res) => {
+    try {
+      // Gemini se simple response mangna
+      const response =
+        await ai.models.generateContent({
+          model:
+            "gemini-3.5-flash",
+
+          contents:
+            "Say hello in one short sentence."
+        });
+
+      // Gemini response browser ko bhejna
+      res.json({
+        success: true,
+
+        message:
+          response.text
+      });
+
+    } catch (error) {
+      console.error(
+        "Gemini API Error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Gemini API connection failed.",
+
+        error:
+          error.message
       });
     }
-
-    // Send complete interview details
-    res.json(result.rows[0]);
-
-  } catch (error) {
-
-    console.error(
-      "Error fetching interview details:",
-      error
-    );
-
-    res.status(500).json({
-      message: "Failed to fetch interview details."
-    });
   }
-});
+);
 
 // ==========================================
-// GEMINI API CONNECTION TEST
+// GEMINI INTERVIEW QUESTION GENERATION API
 // ==========================================
-// ==========================================
-// CHECK AVAILABLE GEMINI MODELS
-// ==========================================
-
-// ==========================================
-// GEMINI API CONNECTION TEST
+//
+// Resume + Role + Experience + Interview Type
+// + Question Count ke basis par Gemini
+// personalized interview questions generate karega.
 // ==========================================
 
-// ==========================================
-// GEMINI API CONNECTION TEST
-// ==========================================
+app.post(
+  "/api/generate-interview-questions",
+  async (req, res) => {
+    try {
+      // ==========================================
+      // FRONTEND DATA RECEIVE KARNA
+      // ==========================================
 
-app.get("/api/test-gemini", async (req, res) => {
-  try {
-    // Gemini se ek simple response mangna
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: "Say hello in one short sentence."
-    });
+      const {
+        resumeText,
+        role,
+        experience,
+        type,
+        questionCount
+      } = req.body;
 
-    // Gemini ka response browser ko bhejna
-    res.json({
-      success: true,
-      message: response.text
-    });
+      // Question count ko number me convert karna
+      const count =
+        Number(questionCount) || 10;
 
-  } catch (error) {
-    console.error("Gemini API Error:", error);
+      // ==========================================
+      // GEMINI PROMPT
+      // ==========================================
 
-    res.status(500).json({
-      success: false,
-      message: "Gemini API connection failed.",
-      error: error.message
-    });
+      const prompt = `
+You are an expert technical and HR interviewer.
+
+Generate exactly ${count} interview questions.
+
+INTERVIEW INFORMATION
+
+Role:
+${role || "Not provided"}
+
+Experience Level:
+${experience || "Not provided"}
+
+Interview Type:
+${type || "Not provided"}
+
+Resume:
+${resumeText || "No resume provided"}
+
+IMPORTANT INSTRUCTIONS:
+
+1. If a resume is provided, carefully analyze it.
+
+2. Ask questions based on the candidate's actual:
+   - skills
+   - projects
+   - internship
+   - education
+   - technologies
+   - certifications
+
+3. Never invent experience, projects, skills,
+   technologies or achievements that are not
+   present in the resume.
+
+4. If Role is provided, make questions relevant
+   to that role.
+
+5. If Experience Level is provided, match the
+   difficulty with that experience level.
+
+6. Beginner:
+   Focus on fundamentals, basic concepts
+   and simple practical questions.
+
+7. Intermediate:
+   Focus on practical implementation,
+   projects and problem solving.
+
+8. Advanced:
+   Focus on scenarios, architecture,
+   deeper concepts and complex problem solving.
+
+9. Technical interview:
+   Questions should mainly be technical.
+
+10. HR interview:
+    Questions should mainly be behavioral,
+    communication and HR related.
+
+11. Mixed interview:
+    Include a balanced combination of
+    technical, project and HR questions.
+
+12. If only a resume is provided and Role,
+    Experience and Interview Type are not provided,
+    generate questions primarily from the resume.
+
+13. If no resume is provided, generate questions
+    from the selected Role, Experience and
+    Interview Type.
+
+14. Every question must be different.
+
+15. Do not repeat questions.
+
+16. Questions should sound natural like a
+    real interviewer asking a candidate.
+
+17. Do not ask questions about information
+    that does not exist in the provided resume.
+
+18. Return ONLY a JSON array of strings.
+
+19. Do not return markdown.
+
+20. Do not add numbering.
+
+EXAMPLE:
+
+[
+  "Tell me about yourself.",
+  "What web development technologies have you worked with?",
+  "Explain one project you have worked on."
+]
+`;
+
+      // ==========================================
+      // DEBUG INFORMATION
+      // ==========================================
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Gemini interview question generation started."
+      );
+
+      console.log(
+        "Role:",
+        role || "Not provided"
+      );
+
+      console.log(
+        "Experience:",
+        experience || "Not provided"
+      );
+
+      console.log(
+        "Interview Type:",
+        type || "Not provided"
+      );
+
+      console.log(
+        "Question Count:",
+        count
+      );
+
+      console.log(
+        "Resume Provided:",
+        resumeText
+          ? "Yes"
+          : "No"
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // ==========================================
+      // CALL GEMINI
+      // ==========================================
+
+      const response =
+        await ai.models.generateContent({
+          // Working Gemini model
+          model:
+            "gemini-3.5-flash",
+
+          contents:
+            prompt,
+
+          config: {
+            // Gemini se JSON response request karna
+            responseMimeType:
+              "application/json"
+          }
+        });
+
+      // Gemini response text
+      const responseText =
+        response.text;
+
+      // ==========================================
+      // SHOW GEMINI RESPONSE
+      // ==========================================
+
+      console.log(
+        "Gemini Raw Response:"
+      );
+
+      console.log(
+        responseText
+      );
+
+      // ==========================================
+      // CONVERT JSON STRING TO ARRAY
+      // ==========================================
+
+      const questions =
+        JSON.parse(
+          responseText
+        );
+
+      // ==========================================
+      // SAFETY CHECK
+      // ==========================================
+
+      if (
+        !Array.isArray(
+          questions
+        )
+      ) {
+        throw new Error(
+          "Gemini did not return a question array."
+        );
+      }
+
+      // Empty array check
+      if (
+        questions.length === 0
+      ) {
+        throw new Error(
+          "Gemini returned an empty question list."
+        );
+      }
+
+      // ==========================================
+      // CLEAN QUESTIONS
+      // ==========================================
+
+      const cleanQuestions =
+        questions
+          .filter(
+            (question) =>
+              typeof question ===
+                "string" &&
+              question.trim() !== ""
+          )
+          .slice(0, count);
+
+      // Final safety check
+      if (
+        cleanQuestions.length === 0
+      ) {
+        throw new Error(
+          "No valid interview questions were generated."
+        );
+      }
+
+      // ==========================================
+      // SEND QUESTIONS TO FRONTEND
+      // ==========================================
+
+      console.log(
+        "Gemini generated",
+        cleanQuestions.length,
+        "valid questions."
+      );
+
+      res.json({
+        success: true,
+
+        questions:
+          cleanQuestions
+      });
+
+    } catch (error) {
+      // ==========================================
+      // GEMINI ERROR
+      // ==========================================
+
+      console.error(
+        "Gemini Interview Question Error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Failed to generate interview questions.",
+
+        error:
+          error.message
+      });
+    }
   }
-});
+);
 
-
-// ===============================
+// ==========================================
 // START SERVER
-// ===============================
+// ==========================================
 
 const PORT = 5000;
 
-app.listen(PORT, () => {
-  console.log(
-    `Server running on http://localhost:${PORT}`
-  );
-});
+app.listen(
+  PORT,
+  () => {
+    console.log(
+      `Server running on http://localhost:${PORT}`
+    );
+  }
+);

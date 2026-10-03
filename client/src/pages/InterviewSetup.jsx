@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function InterviewSetup() {
+  // ==========================================
+  // INTERVIEW SETUP STATES
+  // ==========================================
+
   // Store the selected interview role
   const [role, setRole] = useState("");
 
@@ -14,12 +18,24 @@ function InterviewSetup() {
   // Selected resume file ko store karega
   const [resume, setResume] = useState(null);
 
+  // Interview me kitne questions chahiye
+  const [questionCount, setQuestionCount] = useState(10);
+
   // Used to navigate to the interview page
   const navigate = useNavigate();
 
+  // ==========================================
+  // LOGGED-IN USER
+  // ==========================================
+
   // Get the logged-in user from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
+
   const userId = user?.id;
+
+  // ==========================================
+  // LOGIN PROTECTION
+  // ==========================================
 
   // Redirect logged-out users to Login page
   useEffect(() => {
@@ -34,202 +50,276 @@ function InterviewSetup() {
   }
 
   // ==========================================
-  // RESUME-BASED PERSONALIZED QUESTIONS
-  // Role + Experience + Interview Type + Resume
-  // ke basis par exactly 5 questions generate karega.
+  // FALLBACK INTERVIEW QUESTION GENERATOR
+  // ==========================================
+  //
+  // Agar Gemini API kisi reason se questions
+  // generate nahi kar pati, to ye function
+  // backup questions generate karega.
+  //
+  // Resume optional hai.
+  // Role / Experience / Type bhi optional ho sakte hain
+  // jab resume available ho.
   // ==========================================
 
   const generateResumeQuestions = (
     resumeText,
     role,
     experience,
-    type
+    type,
+    questionCount
   ) => {
-    // Agar resume available nahi hai to normal questions use honge
-    if (!resumeText) {
-      return [
-        "Tell me about yourself.",
-        "What are your technical skills?",
-        "Describe a challenging project you worked on.",
-        "How do you handle pressure and deadlines?",
-        "Why should we hire you?"
-      ];
-    }
-
     // Resume text ko lowercase me convert karna
     const text = (resumeText || "").toLowerCase();
 
-    // Role, Experience aur Interview Type ko safely lowercase me convert karna
+    // Role ko safely lowercase me convert karna
     const selectedRole = (role || "").toLowerCase();
-    const selectedExperience = (experience || "").toLowerCase();
-    const selectedType = (type || "").toLowerCase();
 
-    // Final 5 questions
-    const personalizedQuestions = [];
+    // Experience ko safely lowercase me convert karna
+    const selectedExperience =
+      (experience || "").toLowerCase();
+
+    // Interview type ko safely lowercase me convert karna
+    const selectedType =
+      (type || "").toLowerCase();
+
+    // Questions store karne ke liye array
+    const questions = [];
 
     // ==========================================
-    // QUESTION 1 - BASIC
+    // QUESTION 1 - GENERAL
     // ==========================================
 
-    personalizedQuestions.push(
+    questions.push(
       "Tell me about yourself and your background."
     );
 
     // ==========================================
-    // QUESTION 2 - ROLE BASED
+    // ROLE BASED QUESTION
     // ==========================================
 
     if (selectedRole.includes("python")) {
-      personalizedQuestions.push(
+      questions.push(
         "Why have you chosen Python as your preferred programming language?"
       );
-    } 
-    else if (selectedRole.includes("java")) {
-      personalizedQuestions.push(
+    } else if (selectedRole.includes("java")) {
+      questions.push(
         "Why have you chosen Java as your preferred programming language?"
       );
-    } 
-    else if (selectedRole.includes("web")) {
-      personalizedQuestions.push(
+    } else if (selectedRole.includes("web")) {
+      questions.push(
         "What web development technologies have you worked with?"
       );
-    } 
-    else {
-      personalizedQuestions.push(
-        "What software development practices have you followed in your projects?"
+    } else if (selectedRole.includes("software")) {
+      questions.push(
+        "What software development practices are you familiar with?"
+      );
+    } else {
+      questions.push(
+        "What technical skills are you most confident about?"
       );
     }
 
     // ==========================================
-    // QUESTION 3 - RESUME BASED
+    // RESUME BASED QUESTION
     // ==========================================
 
     if (text.includes("python")) {
-      personalizedQuestions.push(
+      questions.push(
         "You have mentioned Python in your resume. How have you used Python in your projects?"
       );
-    } 
-    else if (text.includes("flask")) {
-      personalizedQuestions.push(
+    } else if (text.includes("java")) {
+      questions.push(
+        "You have mentioned Java in your resume. How have you used Java in your projects?"
+      );
+    } else if (text.includes("flask")) {
+      questions.push(
         "You have mentioned Flask in your resume. How did you use Flask in your project?"
       );
-    } 
-    else if (text.includes("mysql")) {
-      personalizedQuestions.push(
+    } else if (text.includes("mysql")) {
+      questions.push(
         "You have mentioned MySQL in your resume. How did you use MySQL in your projects?"
       );
-    } 
-    else if (text.includes("javascript")) {
-      personalizedQuestions.push(
+    } else if (text.includes("javascript")) {
+      questions.push(
         "You have mentioned JavaScript in your resume. Where have you used JavaScript?"
       );
-    } 
-    else {
-      personalizedQuestions.push(
+    } else if (text.includes("react")) {
+      questions.push(
+        "You have mentioned React in your resume. How have you used React in your projects?"
+      );
+    } else if (text.includes("project")) {
+      questions.push(
         "Which project mentioned in your resume are you most confident about?"
+      );
+    } else {
+      questions.push(
+        "Which skill mentioned in your resume are you most confident about?"
       );
     }
 
     // ==========================================
-    // QUESTION 4 - RESUME / EXPERIENCE BASED
+    // INTERNSHIP / PROJECT QUESTION
     // ==========================================
 
     if (text.includes("internship")) {
-      personalizedQuestions.push(
+      questions.push(
         "What did you learn during your internship, and what responsibilities did you handle?"
       );
-    } 
-    else if (text.includes("flask")) {
-      personalizedQuestions.push(
-        "Explain how you used Flask and MySQL together in your project."
-      );
-    } 
-    else if (text.includes("project")) {
-      personalizedQuestions.push(
+    } else if (text.includes("project")) {
+      questions.push(
         "Explain one project from your resume and describe the main challenge you faced."
       );
-    } 
-    else if (selectedExperience.includes("advanced")) {
-      personalizedQuestions.push(
-        "Explain a complex technical problem from your experience and how you solved it."
+    } else if (
+      selectedExperience.includes("advanced")
+    ) {
+      questions.push(
+        "Explain a complex technical problem you solved and describe your approach."
       );
-    } 
-    else {
-      personalizedQuestions.push(
-        "Explain one technical skill mentioned in your resume."
+    } else {
+      questions.push(
+        "Tell me about a technical problem you have worked on and how you solved it."
       );
     }
 
     // ==========================================
-    // QUESTION 5 - EXPERIENCE + INTERVIEW TYPE
+    // EXPERIENCE BASED QUESTION
+    // ==========================================
+
+    if (
+      selectedExperience.includes("beginner")
+    ) {
+      questions.push(
+        "Explain one technical concept that you understand well."
+      );
+    } else if (
+      selectedExperience.includes("intermediate")
+    ) {
+      questions.push(
+        "Describe a technical challenge you faced in a project and how you solved it."
+      );
+    } else if (
+      selectedExperience.includes("advanced")
+    ) {
+      questions.push(
+        "Describe a complex technical problem from your experience and explain how you solved it."
+      );
+    } else {
+      questions.push(
+        "Which technical skill would you like to improve further?"
+      );
+    }
+
+    // ==========================================
+    // INTERVIEW TYPE BASED QUESTION
     // ==========================================
 
     if (selectedType.includes("technical")) {
-
-      if (selectedExperience.includes("beginner")) {
-        personalizedQuestions.push(
-          "Explain one technical concept from your resume in simple words."
-        );
-      } 
-      else if (selectedExperience.includes("intermediate")) {
-        personalizedQuestions.push(
-          "Describe a technical challenge you faced in one of your projects and how you solved it."
-        );
-      } 
-      else {
-        personalizedQuestions.push(
-          "Explain a complex technical problem from your experience and discuss the approach you used to solve it."
-        );
-      }
-
-    } 
-    else if (selectedType.includes("hr")) {
-
-      personalizedQuestions.push(
-        "What are your strengths, and how do they help you in your professional work?"
+      questions.push(
+        "How do you approach solving a technical problem?"
       );
-
-    } 
-    else {
-
-      personalizedQuestions.push(
-        "Tell me about a technical project you worked on and the main challenge you faced."
+    } else if (selectedType.includes("hr")) {
+      questions.push(
+        "What are your strengths and weaknesses?"
       );
-
+    } else if (selectedType.includes("mixed")) {
+      questions.push(
+        "Tell me about a project you worked on and the biggest challenge you faced."
+      );
+    } else {
+      questions.push(
+        "Why should we hire you for this role?"
+      );
     }
 
-    // Exactly 5 questions return karna
-    return personalizedQuestions.slice(0, 5);
+    // ==========================================
+    // ADDITIONAL BACKUP QUESTIONS
+    // ==========================================
+
+    questions.push(
+      "How do you handle deadlines and pressure?"
+    );
+
+    questions.push(
+      "How do you keep yourself updated with new technologies?"
+    );
+
+    questions.push(
+      "Describe a situation where you had to learn something quickly."
+    );
+
+    questions.push(
+      "How do you approach debugging when your code is not working?"
+    );
+
+    questions.push(
+      "What is one technical achievement you are proud of?"
+    );
+
+    questions.push(
+      "How do you work with other team members on a project?"
+    );
+
+    questions.push(
+      "What are your career goals for the next few years?"
+    );
+
+    questions.push(
+      "Why are you interested in this role?"
+    );
+
+    // Selected question count ke according
+    // questions return karna
+    return questions.slice(
+      0,
+      Number(questionCount) || 10
+    );
   };
 
   // ==========================================
   // START INTERVIEW
-  // Resume ko backend par upload karega
-  // aur uske baad Interview page par jayega.
   // ==========================================
 
   const handleStartInterview = async () => {
-    // Role, Experience aur Interview Type check karo
-    if (!role || !experience || !type) {
+    // ==========================================
+    // VALIDATION
+    // ==========================================
+    //
+    // User ke paas:
+    //
+    // 1. Resume ho
+    // OR
+    //
+    // 2. Role + Experience + Interview Type ho
+    //
+    // Dono me se koi ek available hona chahiye.
+    // ==========================================
+
+    if (
+      !resume &&
+      (!role || !experience || !type)
+    ) {
       alert(
-        "Please select Role, Experience and Interview Type."
+        "Please upload a resume OR select Role, Experience and Interview Type."
       );
+
       return;
     }
 
     try {
-      // Resume upload ke liye FormData create karna
-      const formData = new FormData();
-
-      // Agar user ne resume select kiya hai
-      if (resume) {
-        formData.append("resume", resume);
-      }
+      // ==========================================
+      // RESUME UPLOAD
+      // ==========================================
 
       let uploadedResume = null;
 
-      // Sirf tab upload API call hogi jab resume selected ho
+      // Resume selected hai tabhi upload API call hogi
       if (resume) {
+        const formData = new FormData();
+
+        // Selected resume file ko FormData me add karna
+        formData.append("resume", resume);
+
         const response = await fetch(
           "http://localhost:5000/api/upload-resume",
           {
@@ -240,89 +330,214 @@ function InterviewSetup() {
 
         const data = await response.json();
 
-        // Upload fail hone par error show karo
+        // Resume upload fail hone par process stop karo
         if (!response.ok) {
           alert(
-            data.message || "Resume upload failed."
+            data.message ||
+              "Resume upload failed."
           );
+
           return;
         }
 
-        // Backend se received resume information
+        // Backend se resume information save karna
         uploadedResume = data;
 
         console.log(
-          "Resume uploaded successfully:",
-          data
+          "================================="
+        );
+
+        console.log(
+          "Resume uploaded successfully:"
+        );
+
+        console.log(data);
+
+        console.log(
+          "================================="
         );
       }
 
       // ==========================================
-      // GENERATE PERSONALIZED QUESTIONS
+      // EXTRACTED RESUME TEXT
       // ==========================================
 
-      const personalizedQuestions =
+      const resumeText =
+        uploadedResume?.resumeText || "";
+
+      // ==========================================
+      // FALLBACK QUESTIONS
+      // ==========================================
+      //
+      // Pehle local backup questions generate
+      // kar lenge.
+      // Agar Gemini successfully questions deta hai,
+      // to Gemini questions use honge.
+      // ==========================================
+
+      const fallbackQuestions =
         generateResumeQuestions(
-          uploadedResume?.resumeText || "",
+          resumeText,
           role,
           experience,
-          type
+          type,
+          questionCount
         );
 
       // ==========================================
-      // GENERATED QUESTIONS CONSOLE ME SHOW KARNA
+      // GEMINI AI QUESTION GENERATION
       // ==========================================
 
-      console.log(
-        "================================="
-      );
+      let personalizedQuestions =
+        fallbackQuestions;
 
-      console.log(
-        "Personalized Interview Questions:"
-      );
+      try {
+        console.log(
+          "================================="
+        );
 
-      personalizedQuestions.forEach(
-        (question, index) => {
+        console.log(
+          "Generating questions using Gemini AI..."
+        );
+
+        console.log(
+          "Question Count:",
+          questionCount
+        );
+
+        console.log(
+          "================================="
+        );
+
+        const aiResponse = await fetch(
+          "http://localhost:5000/api/generate-interview-questions",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              resumeText,
+              role,
+              experience,
+              type,
+              questionCount
+            })
+          }
+        );
+
+        const aiData =
+          await aiResponse.json();
+
+        // Gemini successfully questions return kare
+        if (
+          aiResponse.ok &&
+          aiData.success &&
+          Array.isArray(aiData.questions) &&
+          aiData.questions.length > 0
+        ) {
+          personalizedQuestions =
+            aiData.questions.slice(
+              0,
+              Number(questionCount)
+            );
+
           console.log(
-            `Question ${index + 1}: ${question}`
+            "================================="
+          );
+
+          console.log(
+            "Gemini AI Questions:"
+          );
+
+          personalizedQuestions.forEach(
+            (question, index) => {
+              console.log(
+                `Question ${index + 1}: ${question}`
+              );
+            }
+          );
+
+          console.log(
+            "================================="
+          );
+        } else {
+          console.log(
+            "Gemini questions unavailable. Using fallback questions."
           );
         }
-      );
+      } catch (aiError) {
+        // Gemini fail hone par interview ko
+        // completely stop nahi karna.
+        // Local fallback questions use honge.
 
-      console.log(
-        "================================="
-      );
+        console.error(
+          "Gemini question generation error:",
+          aiError
+        );
+
+        console.log(
+          "Using fallback interview questions."
+        );
+      }
 
       // ==========================================
-      // INTERVIEW PAGE PAR NAVIGATE KARNA
+      // FINAL QUESTION SAFETY CHECK
+      // ==========================================
+
+      if (
+        !personalizedQuestions ||
+        personalizedQuestions.length === 0
+      ) {
+        alert(
+          "Unable to generate interview questions. Please try again."
+        );
+
+        return;
+      }
+
+      // ==========================================
+      // INTERVIEW PAGE PAR DATA BHEJNA
       // ==========================================
 
       navigate("/interview", {
         state: {
+          // Selected role
           role,
+
+          // Selected experience
           experience,
+
+          // Selected interview type
           type,
 
-          // Generated personalized questions
-          questions: personalizedQuestions,
+          // User selected question count
+          questionCount,
 
-          // Resume ki complete extracted text
-          resumeText:
-            uploadedResume?.resumeText || "",
+          // Final questions
+          questions:
+            personalizedQuestions,
 
-          // Uploaded resume ki information
+          // Extracted resume text
+          resumeText,
+
+          // Uploaded resume information
           resume: uploadedResume
         }
       });
-
     } catch (error) {
+      // Unexpected error console me show karna
       console.error(
-        "Resume upload error:",
+        "Interview start error:",
         error
       );
 
+      // User ko error message
       alert(
-        "Unable to upload resume. Please try again."
+        "Unable to start interview. Please try again."
       );
     }
   };
@@ -359,7 +574,6 @@ function InterviewSetup() {
             "0 25px 60px rgba(0, 0, 0, 0.35)"
         }}
       >
-
         {/* Top icon */}
         <div
           style={{
@@ -431,7 +645,10 @@ function InterviewSetup() {
           </span>
         </div>
 
-        {/* Resume Upload */}
+        {/* ==========================================
+            RESUME UPLOAD
+            ========================================== */}
+
         <div
           style={{
             marginBottom: "30px"
@@ -453,10 +670,11 @@ function InterviewSetup() {
             type="file"
             accept=".pdf,.doc,.docx"
             onChange={(e) => {
-              const file = e.target.files[0];
+              const file =
+                e.target.files[0];
 
               if (file) {
-                // Selected resume ko state me store kar rahe hain
+                // Selected resume ko state me store karna
                 setResume(file);
 
                 console.log(
@@ -515,7 +733,10 @@ function InterviewSetup() {
           </p>
         </div>
 
-        {/* Role selection */}
+        {/* ==========================================
+            ROLE SELECTION
+            ========================================== */}
+
         <div
           style={{
             marginBottom: "24px"
@@ -575,7 +796,77 @@ function InterviewSetup() {
           </select>
         </div>
 
-        {/* Experience selection */}
+        {/* ==========================================
+            QUESTION COUNT
+            ========================================== */}
+
+        <div
+          style={{
+            marginBottom: "24px"
+          }}
+        >
+          <label
+            style={{
+              display: "block",
+              marginBottom: "9px",
+              fontSize: "15px",
+              fontWeight: "600",
+              color: "#e2e8f0"
+            }}
+          >
+            🔢 Number of Questions
+          </label>
+
+          <select
+            value={questionCount}
+            onChange={(e) =>
+              setQuestionCount(
+                Number(e.target.value)
+              )
+            }
+            style={{
+              width: "100%",
+              padding: "14px 16px",
+              backgroundColor: "#0f172a",
+              color: "#ffffff",
+              border: "1px solid #475569",
+              borderRadius: "10px",
+              fontSize: "15px",
+              outline: "none",
+              cursor: "pointer",
+              boxSizing: "border-box"
+            }}
+          >
+            <option value={5}>
+              5 Questions
+            </option>
+
+            <option value={10}>
+              10 Questions
+            </option>
+
+            <option value={15}>
+              15 Questions
+            </option>
+
+            <option value={20}>
+              20 Questions
+            </option>
+
+            <option value={25}>
+              25 Questions
+            </option>
+
+            <option value={30}>
+              30 Questions
+            </option>
+          </select>
+        </div>
+
+        {/* ==========================================
+            EXPERIENCE SELECTION
+            ========================================== */}
+
         <div
           style={{
             marginBottom: "24px"
@@ -631,7 +922,10 @@ function InterviewSetup() {
           </select>
         </div>
 
-        {/* Interview type selection */}
+        {/* ==========================================
+            INTERVIEW TYPE
+            ========================================== */}
+
         <div
           style={{
             marginBottom: "32px"
@@ -687,7 +981,10 @@ function InterviewSetup() {
           </select>
         </div>
 
-        {/* Start interview button */}
+        {/* ==========================================
+            START INTERVIEW BUTTON
+            ========================================== */}
+
         <button
           className="start-btn"
           onClick={handleStartInterview}
@@ -708,7 +1005,10 @@ function InterviewSetup() {
           🚀 Start Interview
         </button>
 
-        {/* Bottom information */}
+        {/* ==========================================
+            BOTTOM INFORMATION
+            ========================================== */}
+
         <p
           style={{
             margin: "18px 0 0",
@@ -717,9 +1017,9 @@ function InterviewSetup() {
             fontSize: "13px"
           }}
         >
-          Your interview will contain 5 questions.
+          Your interview will contain{" "}
+          {questionCount} questions.
         </p>
-
       </div>
     </div>
   );

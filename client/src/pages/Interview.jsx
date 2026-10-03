@@ -12,10 +12,20 @@ const {
   role,
   experience,
   type,
+   // User ne kitne questions select kiye
+  questionCount,
   questions,
   resumeText,
   resume
 } = location.state || {};
+
+// Selected question count check karna
+useEffect(() => {
+  console.log(
+    "Selected Question Count:",
+    questionCount
+  );
+}, [questionCount]);
 
 // Resume se extracted text console me check karna
 useEffect(() => {
