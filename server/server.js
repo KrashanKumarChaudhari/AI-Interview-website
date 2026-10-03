@@ -1,10 +1,19 @@
 const jwt = require("jsonwebtoken");
+
 const bcrypt = require("bcryptjs");
+
 const express = require("express");
+
 const cors = require("cors");
+
 const { Pool } = require("pg");
+
 // Resume file upload handle karne ke liye multer
 const multer = require("multer");
+
+// PDF resume text extraction ke liye
+const { PDFParse } = require("pdf-parse");
+
 require("dotenv").config();
 
 const app = express();
@@ -44,31 +53,73 @@ const upload = multer({
 // ==========================================
 
 // Resume file receive karne ke liye API
-app.post("/api/upload-resume", upload.single("resume"), (req, res) => {
-  try {
-    // Check karo ki resume upload hua ya nahi
-    if (!req.file) {
-      return res.status(400).json({
-        message: "Please upload a resume."
+// ==========================================
+// RESUME UPLOAD + PDF TEXT EXTRACTION API
+// ==========================================
+
+app.post(
+  "/api/upload-resume",
+  upload.single("resume"),
+  async (req, res) => {
+    try {
+      // Check karo ki resume upload hua ya nahi
+      if (!req.file) {
+        return res.status(400).json({
+          message: "Please upload a resume."
+        });
+      }
+
+      // Uploaded PDF ko read karna
+      const fs = require("fs");
+
+      // PDF file ka data read karna
+      const pdfBuffer = fs.readFileSync(req.file.path);
+
+      // PDF se text extract karna
+     // PDF parser ka instance create karna
+const parser = new PDFParse({
+  data: pdfBuffer
+});
+
+// PDF se text extract karna
+const pdfData = await parser.getText();
+
+      // Extracted resume text
+      const resumeText = pdfData.text;
+
+      // Console me extracted text check karna
+      console.log("=================================");
+      console.log("Resume uploaded successfully");
+      console.log("File:", req.file.originalname);
+      console.log("Extracted Resume Text:");
+      console.log(resumeText);
+      console.log("=================================");
+
+      // Frontend ko response bhejna
+      res.json({
+        message: "Resume uploaded and text extracted successfully.",
+        fileName: req.file.filename,
+        originalName: req.file.originalname,
+        filePath: req.file.path,
+
+        // Extracted resume text frontend ko bhej rahe hain
+        resumeText: resumeText
+      });
+
+    } catch (error) {
+      // Backend terminal me complete error show karo
+      console.error(
+        "Resume processing error:",
+        error
+      );
+
+      res.status(500).json({
+        message: "Failed to process resume.",
+        error: error.message
       });
     }
-
-    // Upload successful
-    res.json({
-      message: "Resume uploaded successfully.",
-      fileName: req.file.filename,
-      originalName: req.file.originalname,
-      filePath: req.file.path
-    });
-
-  } catch (error) {
-    console.error("Resume upload error:", error);
-
-    res.status(500).json({
-      message: "Failed to upload resume."
-    });
   }
-});
+);
 
 // Allow frontend requests from React/Vite
 app.use(cors());

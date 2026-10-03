@@ -7,13 +7,25 @@ function Interview() {
 
   // Get interview setup data from InterviewSetup page
   // Interview Setup se received data
+// Interview Setup se interview ki saari information receive karna
 const {
   role,
   experience,
   type,
   questions,
+  resumeText,
   resume
 } = location.state || {};
+
+// Resume se extracted text console me check karna
+useEffect(() => {
+  if (resumeText) {
+    console.log("=================================");
+    console.log("Resume Text received in Interview:");
+    console.log(resumeText);
+    console.log("=================================");
+  }
+}, [resumeText]);
 
 // Resume received from Interview Setup
 // Ye check karega ki selected resume Interview page tak aaya hai ya nahi.
