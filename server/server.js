@@ -3,6 +3,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const express = require("express");
+// Gemini AI SDK
+const { GoogleGenAI } = require("@google/genai");
 
 const cors = require("cors");
 
@@ -15,6 +17,11 @@ const multer = require("multer");
 const { PDFParse } = require("pdf-parse");
 
 require("dotenv").config();
+
+// Gemini AI client create karna
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY
+});
 
 const app = express();
 
@@ -678,6 +685,46 @@ app.get("/api/interviews/details/:id", verifyToken, async (req, res) => {
 
     res.status(500).json({
       message: "Failed to fetch interview details."
+    });
+  }
+});
+
+// ==========================================
+// GEMINI API CONNECTION TEST
+// ==========================================
+// ==========================================
+// CHECK AVAILABLE GEMINI MODELS
+// ==========================================
+
+// ==========================================
+// GEMINI API CONNECTION TEST
+// ==========================================
+
+// ==========================================
+// GEMINI API CONNECTION TEST
+// ==========================================
+
+app.get("/api/test-gemini", async (req, res) => {
+  try {
+    // Gemini se ek simple response mangna
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: "Say hello in one short sentence."
+    });
+
+    // Gemini ka response browser ko bhejna
+    res.json({
+      success: true,
+      message: response.text
+    });
+
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Gemini API connection failed.",
+      error: error.message
     });
   }
 });
