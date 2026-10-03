@@ -6,8 +6,25 @@ function Interview() {
   const navigate = useNavigate();
 
   // Get interview setup data from InterviewSetup page
-  const { role, experience, type, questions } =
-    location.state || {};
+  // Interview Setup se received data
+const {
+  role,
+  experience,
+  type,
+  questions,
+  resume
+} = location.state || {};
+
+// Resume received from Interview Setup
+// Ye check karega ki selected resume Interview page tak aaya hai ya nahi.
+useEffect(() => {
+  if (resume) {
+    console.log("Resume received:", resume);
+    console.log("Resume name:", resume.name);
+    console.log("Resume type:", resume.type);
+    console.log("Resume size:", resume.size);
+  }
+}, [resume]);
 
   // Get logged-in user information from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
@@ -402,6 +419,7 @@ useEffect(() => {
         setSaving(false);
         return;
       }
+    
 
       // Confirm successful save in browser console
       console.log(

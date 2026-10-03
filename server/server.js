@@ -3,9 +3,72 @@ const bcrypt = require("bcryptjs");
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+// Resume file upload handle karne ke liye multer
+const multer = require("multer");
 require("dotenv").config();
 
 const app = express();
+
+// Frontend (5173) ko backend (5000) se request karne ki permission
+app.use(cors());
+
+// ==========================================
+// RESUME UPLOAD CONFIGURATION
+// ==========================================
+
+// Resume files ko server/uploads folder me save karega
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // Resume save karne ki location
+    cb(null, "uploads/");
+  },
+
+  filename: (req, file, cb) => {
+    // Original file name ko preserve kar rahe hain
+    cb(null, Date.now() + "-" + file.originalname);
+  }
+});
+
+// Multer ko storage configuration dena
+const upload = multer({
+  storage: storage,
+
+  // Maximum resume size: 5 MB
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  }
+});
+
+// ==========================================
+// RESUME UPLOAD API
+// ==========================================
+
+// Resume file receive karne ke liye API
+app.post("/api/upload-resume", upload.single("resume"), (req, res) => {
+  try {
+    // Check karo ki resume upload hua ya nahi
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Please upload a resume."
+      });
+    }
+
+    // Upload successful
+    res.json({
+      message: "Resume uploaded successfully.",
+      fileName: req.file.filename,
+      originalName: req.file.originalname,
+      filePath: req.file.path
+    });
+
+  } catch (error) {
+    console.error("Resume upload error:", error);
+
+    res.status(500).json({
+      message: "Failed to upload resume."
+    });
+  }
+});
 
 // Allow frontend requests from React/Vite
 app.use(cors());
