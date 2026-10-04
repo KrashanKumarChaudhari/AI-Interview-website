@@ -5,320 +5,318 @@ function Interview() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Get interview setup data from InterviewSetup page
-  // Interview Setup se received data
-// Interview Setup se interview ki saari information receive karna
-const {
-  role,
-  experience,
-  type,
-   // User ne kitne questions select kiye
-  questionCount,
-  questions,
-  resumeText,
-  resume
-} = location.state || {};
+  // ==========================================
+  // INTERVIEW SETUP DATA
+  // Interview Setup page se received data
+  // ==========================================
 
-// Selected question count check karna
-useEffect(() => {
-  console.log(
-    "Selected Question Count:",
-    questionCount
-  );
-}, [questionCount]);
+  const {
+    role,
+    experience,
+    type,
+    questionCount,
+    questions,
+    resumeText,
+    resume
+  } = location.state || {};
 
-// Resume se extracted text console me check karna
-useEffect(() => {
-  if (resumeText) {
-    console.log("=================================");
-    console.log("Resume Text received in Interview:");
-    console.log(resumeText);
-    console.log("=================================");
-  }
-}, [resumeText]);
+  // Selected question count check karna
+  useEffect(() => {
+    console.log(
+      "Selected Question Count:",
+      questionCount
+    );
+  }, [questionCount]);
 
-// Resume received from Interview Setup
-// Ye check karega ki selected resume Interview page tak aaya hai ya nahi.
-useEffect(() => {
-  if (resume) {
-    console.log("Resume received:", resume);
-    console.log("Resume name:", resume.name);
-    console.log("Resume type:", resume.type);
-    console.log("Resume size:", resume.size);
-  }
-}, [resume]);
+  // ==========================================
+  // RESUME TEXT DEBUG
+  // ==========================================
 
-  // Get logged-in user information from localStorage
+  useEffect(() => {
+    if (resumeText) {
+      console.log("=================================");
+      console.log("Resume Text received in Interview:");
+      console.log(resumeText);
+      console.log("=================================");
+    }
+  }, [resumeText]);
+
+  // ==========================================
+  // RESUME DEBUG
+  // ==========================================
+
+  useEffect(() => {
+    if (resume) {
+      console.log("Resume received:", resume);
+      console.log("Resume name:", resume.name);
+      console.log("Resume type:", resume.type);
+      console.log("Resume size:", resume.size);
+    }
+  }, [resume]);
+
+  // ==========================================
+  // LOGGED-IN USER
+  // ==========================================
+
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
-  // Store the current answer typed by the user
+  // ==========================================
+  // ANSWER STATES
+  // ==========================================
+
+  // Current question ka answer
   const [answer, setAnswer] = useState("");
 
-  // Track the current question number
+  // Current question number
   const [questionNumber, setQuestionNumber] = useState(1);
 
-  // Store all answers given during the interview
-  // Empty string means that the question was skipped
+  // Saare answers store honge
+  // Empty string = skipped question
   const [answers, setAnswers] = useState([]);
 
-  // Track whether the interview is currently being saved
+  // Interview save/evaluation process
   const [saving, setSaving] = useState(false);
+
   // ==========================================
-// VOICE ANSWER
-// User microphone se answer bol sakega.
-// Speech automatically text me convert hogi.
-// ==========================================
+  // VOICE ANSWER
+  // User microphone se answer bol sakega.
+  // Speech automatically text me convert hogi.
+  // ==========================================
 
-// Check whether browser speech recognition support karta hai
-const SpeechRecognition =
-  window.SpeechRecognition ||
-  window.webkitSpeechRecognition;
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
-// Voice recognition object
-const [recognition, setRecognition] = useState(null);
+  // Voice recognition object
+  const [recognition, setRecognition] = useState(null);
 
-// Track whether microphone currently listening hai
-const [isListening, setIsListening] = useState(false);
+  // Microphone listening status
+  const [isListening, setIsListening] = useState(false);
 
-// ==========================================
-// INITIALIZE VOICE RECOGNITION
-// Browser ke speech recognition ko setup karta hai.
-// ==========================================
+  // ==========================================
+  // INITIALIZE VOICE RECOGNITION
+  // ==========================================
 
-useEffect(() => {
-  // Agar browser speech recognition support nahi karta
-  if (!SpeechRecognition) {
-    console.log(
-      "Speech recognition is not supported in this browser."
-    );
-    return;
-  }
-
-  // Speech recognition ka new object banana
-  const speechRecognition = new SpeechRecognition();
-
-  // User Hindi/English dono bol sakta hai.
-  // Abhi English interview ke liye English set kar rahe hain.
-  speechRecognition.lang = "en-IN";
-
-  // Continuous false ka matlab:
-  // ek baar recognition start hone par speech capture karega
-  // aur pause hone par result dega.
-  speechRecognition.continuous = true;
-
-  // Interim results false:
-  // final converted text hi milega.
-  speechRecognition.interimResults = false;
-
-  // Recognition object ko state me save karna
-  setRecognition(speechRecognition);
-
-}, []);
-
-// ==========================================
-// VOICE RESULT
-// User jo bolega usko text me convert karega.
-// ==========================================
-
-// ==========================================
-// VOICE RESULT
-// User jo bolega usko text me convert karega.
-// Multiple recognition results ko repeat nahi karega.
-// ==========================================
-
-useEffect(() => {
-  // Agar recognition available nahi hai
-  if (!recognition) {
-    return;
-  }
-
-  // Speech recognition se result milne par
-  recognition.onresult = (event) => {
-    // Saare final results ko collect karna
-    let finalTranscript = "";
-
-    for (
-      let i = event.resultIndex;
-      i < event.results.length;
-      i++
-    ) {
-      // Sirf final result lena
-      if (event.results[i].isFinal) {
-        finalTranscript +=
-          event.results[i][0].transcript;
-      }
+  useEffect(() => {
+    // Browser speech recognition support check
+    if (!SpeechRecognition) {
+      console.log(
+        "Speech recognition is not supported in this browser."
+      );
+      return;
     }
 
-    // Agar final speech text mila hai
-    if (finalTranscript.trim() !== "") {
-      setAnswer((previousAnswer) => {
-        // Existing written/voice answer ke saath
-        // naya spoken text add karna
-        if (previousAnswer.trim() !== "") {
-          return (
-            previousAnswer.trim() +
-            " " +
-            finalTranscript.trim()
-          );
+    // Speech recognition object
+    const speechRecognition =
+      new SpeechRecognition();
+
+    // English India voice recognition
+    speechRecognition.lang = "en-IN";
+
+    // Continuous speech recognition
+    speechRecognition.continuous = true;
+
+    // Sirf final result lena
+    speechRecognition.interimResults = false;
+
+    // Recognition object save karna
+    setRecognition(speechRecognition);
+  }, []);
+
+  // ==========================================
+  // VOICE RESULT
+  // User jo bolega usko text me convert karega.
+  // ==========================================
+
+  useEffect(() => {
+    if (!recognition) {
+      return;
+    }
+
+    // Speech result receive hone par
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+
+      // Saare final speech results collect karna
+      for (
+        let i = event.resultIndex;
+        i < event.results.length;
+        i++
+      ) {
+        if (event.results[i].isFinal) {
+          finalTranscript +=
+            event.results[i][0].transcript;
         }
+      }
 
-        return finalTranscript.trim();
-      });
+      // Agar speech text mila hai
+      if (finalTranscript.trim() !== "") {
+        setAnswer((previousAnswer) => {
+          // Existing answer ke end me new speech add karna
+          if (previousAnswer.trim() !== "") {
+            return (
+              previousAnswer.trim() +
+              " " +
+              finalTranscript.trim()
+            );
+          }
+
+          return finalTranscript.trim();
+        });
+      }
+    };
+
+    // Speech recognition error
+    recognition.onerror = (event) => {
+      console.error(
+        "Speech recognition error:",
+        event.error
+      );
+
+      // Serious permission error
+      if (
+        event.error === "not-allowed" ||
+        event.error === "service-not-allowed"
+      ) {
+        setIsListening(false);
+      }
+    };
+
+    // Recognition end
+    recognition.onend = () => {
+      console.log(
+        "Voice recognition ended."
+      );
+    };
+
+    // Cleanup
+    return () => {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+    };
+  }, [recognition]);
+
+  // ==========================================
+  // START / STOP VOICE RECOGNITION
+  // ==========================================
+
+  const handleVoiceAnswer = () => {
+    // Browser support check
+    if (!SpeechRecognition) {
+      alert(
+        "Voice input is not supported in this browser. Please use Google Chrome."
+      );
+      return;
     }
-  };
 
-  // Agar recognition me error aaye
-  recognition.onerror = (event) => {
-    console.error(
-      "Speech recognition error:",
-      event.error
-    );
+    // Recognition ready check
+    if (!recognition) {
+      alert(
+        "Voice recognition is not ready. Please try again."
+      );
+      return;
+    }
 
-    // Sirf serious error par listening stop
-    if (
-      event.error === "not-allowed" ||
-      event.error === "service-not-allowed"
-    ) {
+    // Agar already listening hai
+    if (isListening) {
+      recognition.stop();
       setIsListening(false);
+      return;
     }
+
+    // Microphone start
+    recognition.start();
+
+    // Listening ON
+    setIsListening(true);
   };
 
-  // Recognition automatically end ho to
-  // state ko false nahi karna, kyunki continuous mode hai.
-  recognition.onend = () => {
-    console.log("Voice recognition ended.");
-  };
-
-  // Component cleanup
-  return () => {
-    recognition.onresult = null;
-    recognition.onerror = null;
-    recognition.onend = null;
-  };
-}, [recognition]);
-
-// ==========================================
-// START / STOP VOICE RECOGNITION
-// Microphone ko start aur stop karega.
-// ==========================================
-
-const handleVoiceAnswer = () => {
-  // Browser voice recognition support check
-  if (!SpeechRecognition) {
-    alert(
-      "Voice input is not supported in this browser. Please use Google Chrome."
-    );
-    return;
-  }
-
-  // Agar recognition object available nahi hai
-  if (!recognition) {
-    alert("Voice recognition is not ready. Please try again.");
-    return;
-  }
-
-  // Agar microphone already listening hai
-  // to recognition stop kar do
-  if (isListening) {
-    recognition.stop();
-    setIsListening(false);
-    return;
-  }
-
-  // Microphone start karna
-  recognition.start();
-
-  // Listening status ON
-  setIsListening(true);
-};
-
-
   // ==========================================
-  // QUESTION VOICE
-  // Question change hone par browser question
-  // ko automatically voice me bolega.
+  // QUESTION VOICE + VIDEO CONTROL
+  // Question change hone par:
+  //
+  // 1. Video beginning se start
+  // 2. Question voice start
+  // 3. Voice complete hone par video pause
   // ==========================================
 
-  // ==========================================
-// QUESTION VOICE + VIDEO CONTROL
-// Question start hote hi video play hoga.
-// Question ki voice khatam hote hi video pause hoga.
-// ==========================================
-
-useEffect(() => {
-  // Agar questions available nahi hain to kuch nahi karna
-  if (!questions || questions.length === 0) {
-    return;
-  }
-
-  // Current question ko get karna
-  const currentQuestion =
-    questions[questionNumber - 1];
-
-  // Pehle se chal rahi speech ko stop karna
-  window.speechSynthesis.cancel();
-
-  // Video element ko find karna
-  const video = document.querySelector(
-    "video"
-  );
-
-  // Video ko question ke beginning se start karna
-  if (video) {
-    video.currentTime = 0;
-    video.play().catch(() => {});
-  }
-
-  // Current question ke liye speech banana
-  const speech = new SpeechSynthesisUtterance(
-    currentQuestion
-  );
-
-  // Voice ki speed
-  speech.rate = 0.9;
-
-  // Voice ka pitch
-  speech.pitch = 1;
-
-  // Voice ki volume
-  speech.volume = 1;
-
-  // ==========================================
-  // VOICE KHATAM HONE PAR VIDEO PAUSE
-  // ==========================================
-
-  speech.onend = () => {
-    if (video) {
-      video.pause();
+  useEffect(() => {
+    // Questions available nahi hain
+    if (
+      !questions ||
+      questions.length === 0
+    ) {
+      return;
     }
-  };
 
-  // Question ko bolna
-  window.speechSynthesis.speak(speech);
+    // Current question
+    const currentQuestion =
+      questions[questionNumber - 1];
 
-  // Question change hone par previous
-  // speech aur video ko stop karna
-  return () => {
+    // Previous speech stop
     window.speechSynthesis.cancel();
 
+    // Video element find karna
+    const video =
+      document.querySelector("video");
+
+    // Video beginning se start
     if (video) {
-      video.pause();
+      video.currentTime = 0;
+
+      video
+        .play()
+        .catch(() => {});
     }
-  };
-}, [questionNumber, questions]);
+
+    // Question speech create karna
+    const speech =
+      new SpeechSynthesisUtterance(
+        currentQuestion
+      );
+
+    // Voice settings
+    speech.rate = 0.9;
+    speech.pitch = 1;
+    speech.volume = 1;
+
+    // Voice complete hone par video pause
+    speech.onend = () => {
+      if (video) {
+        video.pause();
+      }
+    };
+
+    // Question speak karna
+    window.speechSynthesis.speak(
+      speech
+    );
+
+    // Question change hone par cleanup
+    return () => {
+      window.speechSynthesis.cancel();
+
+      if (video) {
+        video.pause();
+      }
+    };
+  }, [questionNumber, questions]);
+
   // ==========================================
   // LOGIN PROTECTION
   // ==========================================
 
   useEffect(() => {
-    // If there is no logged-in user, redirect to Login
     if (!userId) {
-      navigate("/login", { replace: true });
+      navigate("/login", {
+        replace: true
+      });
     }
   }, [userId, navigate]);
 
-  // If user is not logged in, don't render the interview
+  // Logged-in user nahi hai
   if (!userId) {
     return null;
   }
@@ -327,8 +325,10 @@ useEffect(() => {
   // INTERVIEW DATA CHECK
   // ==========================================
 
-  // If interview setup data is missing, show an error
-  if (!questions || questions.length === 0) {
+  if (
+    !questions ||
+    questions.length === 0
+  ) {
     return (
       <div
         style={{
@@ -343,10 +343,16 @@ useEffect(() => {
           padding: "20px"
         }}
       >
-        <h2>Interview data not found.</h2>
+        <h2>
+          Interview data not found.
+        </h2>
 
         <button
-          onClick={() => navigate("/interview-setup")}
+          onClick={() =>
+            navigate(
+              "/interview-setup"
+            )
+          }
           style={{
             padding: "12px 22px",
             backgroundColor: "#4f46e5",
@@ -363,109 +369,361 @@ useEffect(() => {
     );
   }
 
-  // Calculate the current score from submitted non-empty answers
-  const score = answers.filter(
-    (ans) => ans.trim() !== ""
-  ).length;
-
   // ==========================================
-  // FINISH INTERVIEW
+  // AI ANSWER EVALUATION
+  // ==========================================
+  // Final answers Gemini ko bheje jayenge.
+  // Har answer ko 0-10 score milega.
   // ==========================================
 
-  // Save the complete interview after the final question
-  const finishInterview = async (updatedAnswers) => {
-    // Make sure a logged-in user still exists
-    if (!userId) {
-      alert("Please login before starting an interview.");
-      navigate("/login");
-      return;
-    }
-
-    // Start saving process
-    setSaving(true);
-
-    // Stop any currently playing question voice
-    window.speechSynthesis.cancel();
-
-    // Calculate final score
-    // Skipped questions contain "" and therefore get 0 points
-    const finalScore = updatedAnswers.filter(
-      (ans) => ans.trim() !== ""
-    ).length;
-
+  const evaluateAnswers = async (
+    updatedAnswers
+  ) => {
     try {
-      // Send the complete interview attempt to the backend
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Starting Gemini AI Answer Evaluation..."
+      );
+
+      console.log(
+        "Questions:",
+        questions
+      );
+
+      console.log(
+        "Answers:",
+        updatedAnswers
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // Gemini evaluation API call
       const response = await fetch(
-        "http://localhost:5000/api/interviews",
+        "http://localhost:5000/api/evaluate-interview-answers",
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type":
+              "application/json"
           },
+
           body: JSON.stringify({
-            // Logged-in user's ID
-            user_id: userId,
-
-            // Interview configuration
-            role: role,
-            experience: experience,
-            interview_type: type,
-
-            // Final score
-            score: finalScore,
-
-            // Total number of questions
-            total_questions: questions.length,
-
-            // Save all questions
             questions: questions,
-
-            // Save all user answers
-            // Empty string represents a skipped question
             answers: updatedAnswers
           })
         }
       );
 
-      // Convert backend response to JSON
-      const data = await response.json();
+      // Backend response JSON
+      const data =
+        await response.json();
 
-      // Check whether the interview was actually saved
+      // Backend error check
       if (!response.ok) {
-        console.error("Backend save error:", data);
+        console.error(
+          "AI Evaluation Error:",
+          data
+        );
 
         alert(
-          data.message || "Failed to save interview result."
+          data.message ||
+            "Failed to evaluate interview answers."
+        );
+
+        return null;
+      }
+
+      // Success response
+      if (!data.success) {
+        console.error(
+          "AI Evaluation Failed:",
+          data
+        );
+
+        alert(
+          data.message ||
+            "AI evaluation failed."
+        );
+
+        return null;
+      }
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Gemini AI Evaluation Completed."
+      );
+
+      console.log(
+        "Evaluations:",
+        data.evaluations
+      );
+
+      console.log(
+        "Total AI Score:",
+        data.totalScore
+      );
+
+      console.log(
+        "Maximum AI Score:",
+        data.maxScore
+      );
+
+      console.log(
+        "================================="
+      );
+
+      return data;
+    } catch (error) {
+      // Network/server error
+      console.error(
+        "AI Evaluation Request Error:",
+        error
+      );
+
+      alert(
+        "Unable to evaluate answers. Please make sure the backend server is running."
+      );
+
+      return null;
+    }
+  };
+
+  // ==========================================
+  // FINISH INTERVIEW
+  // ==========================================
+
+  const finishInterview = async (
+    updatedAnswers
+  ) => {
+    // Logged-in user check
+    if (!userId) {
+      alert(
+        "Please login before starting an interview."
+      );
+
+      navigate("/login");
+
+      return;
+    }
+
+    // Saving/evaluation process start
+    setSaving(true);
+
+    // Stop question voice
+    window.speechSynthesis.cancel();
+
+    // Stop microphone if active
+    if (
+      recognition &&
+      isListening
+    ) {
+      recognition.stop();
+      setIsListening(false);
+    }
+
+    try {
+      // ==========================================
+      // STEP 1
+      // GEMINI SE ANSWERS EVALUATE KARNA
+      // ==========================================
+
+      const evaluation =
+        await evaluateAnswers(
+          updatedAnswers
+        );
+
+      // Agar AI evaluation fail ho gayi
+      // to interview save nahi karenge.
+      if (!evaluation) {
+        setSaving(false);
+        return;
+      }
+
+      // ==========================================
+      // STEP 2
+      // AI TOTAL SCORE
+      // ==========================================
+
+      const totalAIScore =
+        Number(
+          evaluation.totalScore
+        ) || 0;
+
+      const maxAIScore =
+        Number(
+          evaluation.maxScore
+        ) ||
+        questions.length * 10;
+
+      // ==========================================
+      // STEP 3
+      // EXISTING DATABASE SCORE FORMAT
+      // ==========================================
+      //
+      // Existing score field question-based hai.
+      //
+      // Example:
+      // AI score = 72 / 100
+      // Existing score = 7 / 10
+      //
+      // Isse current Result/Profile structure
+      // compatible rahega.
+      // ==========================================
+
+      const finalScore =
+        Math.round(
+          totalAIScore / 10
+        );
+
+      // Safety: score ko total questions
+      // se zyada nahi hone dena
+      const normalizedScore =
+        Math.min(
+          questions.length,
+          Math.max(
+            0,
+            finalScore
+          )
+        );
+
+      console.log(
+        "AI Total Score:",
+        totalAIScore,
+        "/",
+        maxAIScore
+      );
+
+      console.log(
+        "Normalized Database Score:",
+        normalizedScore,
+        "/",
+        questions.length
+      );
+
+      // ==========================================
+      // STEP 4
+      // DATABASE ME INTERVIEW SAVE KARNA
+      // ==========================================
+
+      const response =
+        await fetch(
+          "http://localhost:5000/api/interviews",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              // Logged-in user
+              user_id: userId,
+
+              // Interview configuration
+              role: role,
+              experience: experience,
+              interview_type: type,
+
+              // AI normalized score
+              score: normalizedScore,
+
+              // Total questions
+              total_questions:
+                questions.length,
+
+              // Questions
+              questions: questions,
+
+              // User answers
+              answers: updatedAnswers,
+              // AI evaluation data
+              evaluations: evaluation.evaluations
+            })
+          }
+        );
+
+      // Backend JSON response
+      const data =
+        await response.json();
+
+      // Database save error
+      if (!response.ok) {
+        console.error(
+          "Backend save error:",
+          data
+        );
+
+        alert(
+          data.message ||
+            "Failed to save interview result."
         );
 
         setSaving(false);
         return;
       }
-    
 
-      // Confirm successful save in browser console
+      // ==========================================
+      // DATABASE SAVE SUCCESS
+      // ==========================================
+
       console.log(
         "Interview saved successfully:",
         data.interview
       );
 
-      // Go to Result page only after successful database save
+      // ==========================================
+      // RESULT PAGE
+      // AI EVALUATION RESULT KE SAATH
+      // ==========================================
+
       navigate("/result", {
         state: {
-          score: finalScore,
-          answers: updatedAnswers,
-          questions: questions
+          // Existing Result.jsx ke liye
+          score: normalizedScore,
+
+          // User answers
+          answers:
+            updatedAnswers,
+
+          // Questions
+          questions:
+            questions,
+
+          // New AI evaluation data
+          evaluations:
+            evaluation.evaluations,
+
+          // Complete AI score
+          totalAIScore:
+            totalAIScore,
+
+          // Maximum AI score
+          maxAIScore:
+            maxAIScore
         }
       });
     } catch (error) {
-      // Handle server connection or network errors
+      // ==========================================
+      // FINAL ERROR HANDLING
+      // ==========================================
+
       console.error(
-        "Error saving interview result:",
+        "Error finishing interview:",
         error
       );
 
       alert(
-        "Unable to save interview. Please make sure the backend server is running."
+        "Unable to complete interview. Please make sure the backend server is running."
       );
 
       setSaving(false);
@@ -476,78 +734,109 @@ useEffect(() => {
   // SUBMIT ANSWER
   // ==========================================
 
-  const handleSubmitAnswer = async () => {
-    // Prevent submitting an empty answer
-    if (answer.trim() === "") {
-      alert("Please enter your answer before submitting.");
-      return;
-    }
+  const handleSubmitAnswer =
+    async () => {
+      // Empty answer prevent karna
+      if (
+        answer.trim() === ""
+      ) {
+        alert(
+          "Please enter your answer before submitting."
+        );
 
-    // Stop question voice when user submits the answer
-    window.speechSynthesis.cancel();
+        return;
+      }
 
-    // Add the current answer to the answers array
-    const updatedAnswers = [
-      ...answers,
-      answer.trim()
-    ];
+      // Question voice stop
+      window.speechSynthesis.cancel();
 
-    // Update answers state
-    setAnswers(updatedAnswers);
+      // Current answer add karna
+      const updatedAnswers = [
+        ...answers,
+        answer.trim()
+      ];
 
-    // Clear the textarea
-    setAnswer("");
+      // Answers state update
+      setAnswers(
+        updatedAnswers
+      );
 
-    // If more questions are remaining, move to the next question
-    if (questionNumber < questions.length) {
-      setQuestionNumber(questionNumber + 1);
-      return;
-    }
+      // Textarea clear
+      setAnswer("");
 
-    // Final question has been submitted
-    await finishInterview(updatedAnswers);
-  };
+      // More questions remaining
+      if (
+        questionNumber <
+        questions.length
+      ) {
+        setQuestionNumber(
+          questionNumber + 1
+        );
+
+        return;
+      }
+
+      // Final question
+      await finishInterview(
+        updatedAnswers
+      );
+    };
 
   // ==========================================
   // SKIP CURRENT QUESTION
   // ==========================================
 
-  const handleSkipQuestion = async () => {
-    // Ask the user for confirmation before skipping
-    const confirmSkip = window.confirm(
-      "Are you sure you want to skip this question?"
-    );
+  const handleSkipQuestion =
+    async () => {
+      // Skip confirmation
+      const confirmSkip =
+        window.confirm(
+          "Are you sure you want to skip this question?"
+        );
 
-    // If user clicks Cancel, stay on the same question
-    if (!confirmSkip) {
-      return;
-    }
+      // Cancel
+      if (!confirmSkip) {
+        return;
+      }
 
-    // Stop question voice when skipping
-    window.speechSynthesis.cancel();
+      // Question voice stop
+      window.speechSynthesis.cancel();
 
-    // Store an empty answer for the skipped question
-    const updatedAnswers = [
-      ...answers,
-      ""
-    ];
+      // Empty answer = skipped
+      const updatedAnswers = [
+        ...answers,
+        ""
+      ];
 
-    // Update answers state
-    setAnswers(updatedAnswers);
+      // Answers state update
+      setAnswers(
+        updatedAnswers
+      );
 
-    // Clear the textarea
-    setAnswer("");
+      // Textarea clear
+      setAnswer("");
 
-    // If more questions are remaining, move to the next question
-    if (questionNumber < questions.length) {
-      setQuestionNumber(questionNumber + 1);
-      return;
-    }
+      // More questions remaining
+      if (
+        questionNumber <
+        questions.length
+      ) {
+        setQuestionNumber(
+          questionNumber + 1
+        );
 
-    // If the final question is skipped,
-    // save the complete interview
-    await finishInterview(updatedAnswers);
-  };
+        return;
+      }
+
+      // Final question skipped
+      await finishInterview(
+        updatedAnswers
+      );
+    };
+
+  // ==========================================
+  // INTERVIEW UI
+  // ==========================================
 
   return (
     <div
@@ -567,7 +856,8 @@ useEffect(() => {
           padding: "40px",
           borderRadius: "18px",
           border: "1px solid #3730a3",
-          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)"
+          boxShadow:
+            "0 20px 40px rgba(0, 0, 0, 0.25)"
         }}
       >
         {/* Interview heading */}
@@ -586,46 +876,79 @@ useEffect(() => {
             marginBottom: "30px"
           }}
         >
-          Answer the questions to complete your interview.
+          Answer the questions to
+          complete your interview.
         </p>
 
-        {/* Interview configuration information */}
+        {/* Interview configuration */}
         <div
           style={{
             backgroundColor: "#0f172a",
             padding: "20px",
             borderRadius: "12px",
             marginBottom: "30px",
-            border: "1px solid #334155"
+            border:
+              "1px solid #334155"
           }}
         >
-          <p style={{ margin: "0 0 10px" }}>
-            <strong>Role:</strong> {role}
+          <p
+            style={{
+              margin: "0 0 10px"
+            }}
+          >
+            <strong>Role:</strong>{" "}
+            {role}
           </p>
 
-          <p style={{ margin: "0 0 10px" }}>
-            <strong>Experience:</strong> {experience}
+          <p
+            style={{
+              margin: "0 0 10px"
+            }}
+          >
+            <strong>
+              Experience:
+            </strong>{" "}
+            {experience}
           </p>
 
-          <p style={{ margin: "0 0 10px" }}>
-            <strong>Interview Type:</strong> {type}
+          <p
+            style={{
+              margin: "0 0 10px"
+            }}
+          >
+            <strong>
+              Interview Type:
+            </strong>{" "}
+            {type}
           </p>
 
-          <p style={{ margin: 0 }}>
-            <strong>Total Questions:</strong>{" "}
+          <p
+            style={{
+              margin: 0
+            }}
+          >
+            <strong>
+              Total Questions:
+            </strong>{" "}
             {questions.length}
           </p>
         </div>
 
         {/* Interview progress */}
-        <div style={{ marginBottom: "20px" }}>
+        <div
+          style={{
+            marginBottom: "20px"
+          }}
+        >
           <p
             style={{
               margin: "0 0 8px",
               color: "#cbd5e1"
             }}
           >
-            Question {questionNumber} of {questions.length}
+            Question{" "}
+            {questionNumber} of{" "}
+            {questions.length}
           </p>
 
           {/* Progress bar */}
@@ -633,7 +956,8 @@ useEffect(() => {
             style={{
               width: "100%",
               height: "8px",
-              backgroundColor: "#334155",
+              backgroundColor:
+                "#334155",
               borderRadius: "10px",
               overflow: "hidden"
             }}
@@ -641,10 +965,13 @@ useEffect(() => {
             <div
               style={{
                 width: `${
-                  (questionNumber / questions.length) * 100
+                  (questionNumber /
+                    questions.length) *
+                  100
                 }%`,
                 height: "100%",
-                backgroundColor: "#6366f1",
+                backgroundColor:
+                  "#6366f1",
                 borderRadius: "10px"
               }}
             ></div>
@@ -653,18 +980,19 @@ useEffect(() => {
 
         {/* ==========================================
             AI INTERVIEWER VIDEO
-            The key forces the video element to
-            restart whenever the question changes.
             ========================================== */}
+
         <div
           style={{
             width: "100%",
             aspectRatio: "16 / 9",
-            backgroundColor: "#020617",
+            backgroundColor:
+              "#020617",
             borderRadius: "14px",
             overflow: "hidden",
             marginBottom: "20px",
-            border: "1px solid #334155"
+            border:
+              "1px solid #334155"
           }}
         >
           <video
@@ -684,11 +1012,13 @@ useEffect(() => {
         {/* Current interview question */}
         <div
           style={{
-            backgroundColor: "#0f172a",
+            backgroundColor:
+              "#0f172a",
             padding: "25px",
             borderRadius: "12px",
             marginBottom: "20px",
-            border: "1px solid #334155"
+            border:
+              "1px solid #334155"
           }}
         >
           <p
@@ -697,7 +1027,8 @@ useEffect(() => {
               color: "#a5b4fc",
               fontSize: "14px",
               fontWeight: "600",
-              textTransform: "uppercase"
+              textTransform:
+                "uppercase"
             }}
           >
             Interviewer Question
@@ -710,67 +1041,84 @@ useEffect(() => {
               lineHeight: "1.5"
             }}
           >
-            {questions[questionNumber - 1]}
+            {
+              questions[
+                questionNumber - 1
+              ]
+            }
           </h2>
         </div>
 
         {/* ==========================================
-    VOICE ANSWER BUTTON
-    User microphone se answer bol sakta hai.
-    ========================================== */}
+            VOICE ANSWER BUTTON
+            ========================================== */}
 
-<div
-  style={{
-    display: "flex",
-    justifyContent: "flex-end",
-    marginBottom: "10px"
-  }}
->
-  <button
-    type="button"
-    onClick={handleVoiceAnswer}
-    disabled={saving}
-    style={{
-      padding: "10px 18px",
-      backgroundColor: isListening
-        ? "#dc2626"
-        : "#4f46e5",
-      color: "#ffffff",
-      border: "none",
-      borderRadius: "8px",
-      cursor: saving
-        ? "not-allowed"
-        : "pointer",
-      fontSize: "14px",
-      fontWeight: "600"
-    }}
-  >
-    {isListening
-      ? "🛑 Stop Speaking"
-      : "🎤 Speak Answer"}
-  </button>
-</div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent:
+              "flex-end",
+            marginBottom: "10px"
+          }}
+        >
+          <button
+            type="button"
+            onClick={
+              handleVoiceAnswer
+            }
+            disabled={saving}
+            style={{
+              padding:
+                "10px 18px",
+              backgroundColor:
+                isListening
+                  ? "#dc2626"
+                  : "#4f46e5",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
+              fontSize: "14px",
+              fontWeight: "600"
+            }}
+          >
+            {isListening
+              ? "🛑 Stop Speaking"
+              : "🎤 Speak Answer"}
+          </button>
+        </div>
 
         {/* Answer input */}
         <textarea
           value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
+          onChange={(e) =>
+            setAnswer(
+              e.target.value
+            )
+          }
           placeholder="Type your answer here..."
           rows="8"
           disabled={saving}
           style={{
             width: "100%",
-            boxSizing: "border-box",
+            boxSizing:
+              "border-box",
             padding: "15px",
-            backgroundColor: "#0f172a",
+            backgroundColor:
+              "#0f172a",
             color: "#ffffff",
-            border: "1px solid #475569",
+            border:
+              "1px solid #475569",
             borderRadius: "10px",
             resize: "vertical",
             fontSize: "16px",
             outline: "none",
             marginBottom: "20px",
-            opacity: saving ? 0.6 : 1
+            opacity: saving
+              ? 0.6
+              : 1
           }}
         />
 
@@ -778,19 +1126,24 @@ useEffect(() => {
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent:
+              "flex-end",
             gap: "12px"
           }}
         >
-          {/* Skip current question */}
+          {/* Skip button */}
           <button
-            onClick={handleSkipQuestion}
+            onClick={
+              handleSkipQuestion
+            }
             disabled={saving}
             style={{
-              padding: "12px 24px",
-              backgroundColor: saving
-                ? "#64748b"
-                : "#475569",
+              padding:
+                "12px 24px",
+              backgroundColor:
+                saving
+                  ? "#64748b"
+                  : "#475569",
               color: "#ffffff",
               border: "none",
               borderRadius: "8px",
@@ -804,15 +1157,19 @@ useEffect(() => {
             Skip Question
           </button>
 
-          {/* Submit answer / Finish interview */}
+          {/* Submit / Finish button */}
           <button
-            onClick={handleSubmitAnswer}
+            onClick={
+              handleSubmitAnswer
+            }
             disabled={saving}
             style={{
-              padding: "12px 24px",
-              backgroundColor: saving
-                ? "#64748b"
-                : "#4f46e5",
+              padding:
+                "12px 24px",
+              backgroundColor:
+                saving
+                  ? "#64748b"
+                  : "#4f46e5",
               color: "#ffffff",
               border: "none",
               borderRadius: "8px",
@@ -824,8 +1181,9 @@ useEffect(() => {
             }}
           >
             {saving
-              ? "Saving Interview..."
-              : questionNumber === questions.length
+              ? "Evaluating with AI..."
+              : questionNumber ===
+                questions.length
               ? "Finish Interview"
               : "Submit Answer"}
           </button>

@@ -506,15 +506,16 @@ app.post(
     try {
       // Get complete interview data
       const {
-        user_id,
-        role,
-        experience,
-        interview_type,
-        score,
-        total_questions,
-        questions,
-        answers
-      } = req.body;
+  user_id,
+  role,
+  experience,
+  interview_type,
+  score,
+  total_questions,
+  questions,
+  answers,
+  evaluations
+} = req.body;
 
       // ==========================================
       // VALIDATE INTERVIEW DATA
@@ -608,45 +609,50 @@ app.post(
       // INSERT INTERVIEW INTO DATABASE
       // ==========================================
 
-      const result =
-        await pool.query(
-          `INSERT INTO interviews
-           (
-             user_id,
-             role,
-             experience,
-             interview_type,
-             score,
-             total_questions,
-             questions,
-             answers
-           )
-           VALUES
-           (
-             $1,
-             $2,
-             $3,
-             $4,
-             $5,
-             $6,
-             $7::jsonb,
-             $8::jsonb
-           )
-           RETURNING *`,
+     const result =
+  await pool.query(
+    `INSERT INTO interviews
+     (
+       user_id,
+       role,
+       experience,
+       interview_type,
+       score,
+       total_questions,
+       questions,
+       answers,
+       evaluations
+     )
+     VALUES
+     (
+       $1,
+       $2,
+       $3,
+       $4,
+       $5,
+       $6,
+       $7,
+       $8,
+       $9
+     )
+     RETURNING *`,
 
-          [
-            user_id,
-            role,
-            experience,
-            interview_type,
-            score,
-            total_questions,
+    [
+      user_id,
+      role,
+      experience,
+      interview_type,
+      score,
+      total_questions,
 
-            // Convert arrays into JSON strings
-            JSON.stringify(questions),
-            JSON.stringify(answers)
-          ]
-        );
+      // Convert arrays into JSON strings
+      JSON.stringify(questions),
+      JSON.stringify(answers),
+
+      // Gemini AI evaluations ko JSON ke form me save karna
+      JSON.stringify(evaluations)
+    ]
+  );
 
       // ==========================================
       // DATABASE SAVE CONFIRMATION
@@ -1267,6 +1273,1065 @@ EXAMPLE:
 // START SERVER
 // ==========================================
 
+// ==========================================
+// GEMINI AI ANSWER EVALUATION API
+// ==========================================
+// User ke interview answers ko Gemini evaluate karega.
+// Har answer ko 0-10 score aur short feedback milega.
+// ==========================================
+
+app.post(
+  "/api/evaluate-interview-answers",
+  async (req, res) => {
+    try {
+      // Frontend se questions aur answers receive karna
+      const {
+        questions,
+        answers
+      } = req.body;
+
+      // ==========================================
+      // BASIC VALIDATION
+      // ==========================================
+
+      if (
+        !Array.isArray(questions) ||
+        !Array.isArray(answers)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Questions and answers must be arrays."
+        });
+      }
+
+      // Questions aur answers ki count same honi chahiye
+      if (
+        questions.length !== answers.length
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Questions and answers count must be equal."
+        });
+      }
+
+      // ==========================================
+      // GEMINI EVALUATION PROMPT
+      // ==========================================
+
+      const prompt = `
+You are an expert technical interview evaluator.
+
+Evaluate the candidate's answers to the interview questions.
+
+For every question, evaluate the answer based on:
+
+1. Correctness
+2. Relevance
+3. Completeness
+4. Technical understanding
+5. Clarity
+
+SCORING SYSTEM:
+
+0 = No answer, skipped, meaningless text, or completely incorrect
+
+1-2 = Very poor answer
+
+3-4 = Weak answer with major problems
+
+5-6 = Average answer with basic understanding
+
+7-8 = Good answer with correct understanding
+
+9 = Very good answer with strong understanding
+
+10 = Excellent answer with accurate, complete and clear understanding
+
+IMPORTANT RULES:
+
+- If the answer is empty, give score 0.
+- If the answer is random or meaningless text, give score 0.
+- Do NOT give marks simply because an answer exists.
+- Evaluate the answer according to the actual question.
+- Do not invent information that is not present in the candidate's answer.
+- Be fair to beginner candidates.
+- A short but correct answer can still receive a good score.
+- Give a short and useful feedback for every answer.
+- Return exactly one evaluation for every question.
+- The question number must match the question position.
+
+INTERVIEW QUESTIONS AND CANDIDATE ANSWERS:
+
+${questions
+  .map(
+    (question, index) => `
+Question ${index + 1}:
+${question}
+
+Candidate Answer:
+${
+  answers[index] &&
+  answers[index].trim() !== ""
+    ? answers[index]
+    : "(No answer - skipped)"
+}
+`
+  )
+  .join("\n")}
+
+RETURN ONLY THIS JSON FORMAT:
+
+[
+  {
+    "questionNumber": 1,
+    "score": 0,
+    "feedback": "Short feedback about the candidate's answer."
+  }
+]
+
+IMPORTANT:
+
+- Return one object for every question.
+- Do not return markdown.
+- Do not return explanations outside the JSON.
+- Do not use percentage values.
+- Score must be an integer from 0 to 10.
+`;
+
+      // ==========================================
+      // DEBUG INFORMATION
+      // ==========================================
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Gemini AI Answer Evaluation Started."
+      );
+
+      console.log(
+        "Total Questions:",
+        questions.length
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // ==========================================
+      // CALL GEMINI
+      // ==========================================
+
+      const response =
+        await ai.models.generateContent({
+          model:
+            "gemini-3.5-flash",
+
+          contents:
+            prompt,
+
+          config: {
+            responseMimeType:
+              "application/json"
+          }
+        });
+
+      // Gemini ka raw response
+      const responseText =
+        response.text;
+
+      // ==========================================
+      // SHOW GEMINI RESPONSE
+      // ==========================================
+
+      console.log(
+        "Gemini Evaluation Response:"
+      );
+
+      console.log(
+        responseText
+      );
+
+      // ==========================================
+      // CONVERT GEMINI JSON
+      // ==========================================
+
+      const evaluations =
+        JSON.parse(
+          responseText
+        );
+
+      // ==========================================
+      // VALIDATE GEMINI RESPONSE
+      // ==========================================
+
+      if (
+        !Array.isArray(
+          evaluations
+        )
+      ) {
+        throw new Error(
+          "Gemini did not return an evaluation array."
+        );
+      }
+
+      // Gemini ko har question ke liye
+      // evaluation return karni chahiye
+      if (
+        evaluations.length !==
+        questions.length
+      ) {
+        throw new Error(
+          "Gemini evaluation count does not match question count."
+        );
+      }
+
+      // ==========================================
+      // CLEAN EVALUATION DATA
+      // ==========================================
+
+      const cleanEvaluations =
+        evaluations.map(
+          (evaluation, index) => {
+            let score =
+              Number(
+                evaluation.score
+              );
+
+            // Invalid score ko 0 karna
+            if (
+              Number.isNaN(score)
+            ) {
+              score = 0;
+            }
+
+            // Score ko 0-10 ke range me rakhna
+            score = Math.round(
+              Math.max(
+                0,
+                Math.min(
+                  10,
+                  score
+                )
+              )
+            );
+
+            // Empty answer ke liye
+            // score hamesha 0 hona chahiye
+            if (
+              !answers[index] ||
+              answers[index].trim() === ""
+            ) {
+              score = 0;
+            }
+
+            return {
+              questionNumber:
+                index + 1,
+
+              score:
+                score,
+
+              feedback:
+                typeof evaluation.feedback ===
+                "string"
+                  ? evaluation.feedback
+                  : "No feedback available."
+            };
+          }
+        );
+
+      // ==========================================
+      // CALCULATE TOTAL AI SCORE
+      // ==========================================
+
+      const totalScore =
+        cleanEvaluations.reduce(
+          (
+            total,
+            evaluation
+          ) =>
+            total +
+            evaluation.score,
+          0
+        );
+
+      const maxScore =
+        questions.length * 10;
+
+      // ==========================================
+      // DEBUG FINAL EVALUATION
+      // ==========================================
+
+      console.log(
+        "AI Evaluation Completed."
+      );
+
+      console.log(
+        "Total AI Score:",
+        totalScore,
+        "/",
+        maxScore
+      );
+
+      console.log(
+        "Evaluations:",
+        cleanEvaluations
+      );
+
+      // ==========================================
+      // SEND RESULT TO FRONTEND
+      // ==========================================
+
+      res.json({
+        success: true,
+
+        evaluations:
+          cleanEvaluations,
+
+        totalScore:
+          totalScore,
+
+        maxScore:
+          maxScore
+      });
+
+    } catch (error) {
+      // ==========================================
+      // GEMINI EVALUATION ERROR
+      // ==========================================
+
+      console.error(
+        "Gemini Answer Evaluation Error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Failed to evaluate interview answers.",
+
+        error:
+          error.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// START SERVER
+// ==========================================
+
+// ==========================================
+// GEMINI AI ANSWER EVALUATION API
+// ==========================================
+// User ke interview answers ko Gemini evaluate karega.
+// Har answer ko 0-10 score aur short feedback milega.
+// ==========================================
+
+app.post(
+  "/api/evaluate-interview-answers",
+  async (req, res) => {
+    try {
+      // Frontend se questions aur answers receive karna
+      const {
+        questions,
+        answers
+      } = req.body;
+
+      // ==========================================
+      // BASIC VALIDATION
+      // ==========================================
+
+      if (
+        !Array.isArray(questions) ||
+        !Array.isArray(answers)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Questions and answers must be arrays."
+        });
+      }
+
+      // Questions aur answers ki count same honi chahiye
+      if (
+        questions.length !== answers.length
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Questions and answers count must be equal."
+        });
+      }
+
+      // ==========================================
+      // GEMINI EVALUATION PROMPT
+      // ==========================================
+
+      const prompt = `
+You are an expert technical interview evaluator.
+
+Evaluate the candidate's answers to the interview questions.
+
+For every question, evaluate the answer based on:
+
+1. Correctness
+2. Relevance
+3. Completeness
+4. Technical understanding
+5. Clarity
+
+SCORING SYSTEM:
+
+0 = No answer, skipped, meaningless text, or completely incorrect
+
+1-2 = Very poor answer
+
+3-4 = Weak answer with major problems
+
+5-6 = Average answer with basic understanding
+
+7-8 = Good answer with correct understanding
+
+9 = Very good answer with strong understanding
+
+10 = Excellent answer with accurate, complete and clear understanding
+
+IMPORTANT RULES:
+
+- If the answer is empty, give score 0.
+- If the answer is random or meaningless text, give score 0.
+- Do NOT give marks simply because an answer exists.
+- Evaluate the answer according to the actual question.
+- Do not invent information that is not present in the candidate's answer.
+- Be fair to beginner candidates.
+- A short but correct answer can still receive a good score.
+- Give a short and useful feedback for every answer.
+- Return exactly one evaluation for every question.
+- The question number must match the question position.
+
+INTERVIEW QUESTIONS AND CANDIDATE ANSWERS:
+
+${questions
+  .map(
+    (question, index) => `
+Question ${index + 1}:
+${question}
+
+Candidate Answer:
+${
+  answers[index] &&
+  answers[index].trim() !== ""
+    ? answers[index]
+    : "(No answer - skipped)"
+}
+`
+  )
+  .join("\n")}
+
+RETURN ONLY THIS JSON FORMAT:
+
+[
+  {
+    "questionNumber": 1,
+    "score": 0,
+    "feedback": "Short feedback about the candidate's answer."
+  }
+]
+
+IMPORTANT:
+
+- Return one object for every question.
+- Do not return markdown.
+- Do not return explanations outside the JSON.
+- Do not use percentage values.
+- Score must be an integer from 0 to 10.
+`;
+
+      // ==========================================
+      // DEBUG INFORMATION
+      // ==========================================
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Gemini AI Answer Evaluation Started."
+      );
+
+      console.log(
+        "Total Questions:",
+        questions.length
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // ==========================================
+      // CALL GEMINI
+      // ==========================================
+
+      const response =
+        await ai.models.generateContent({
+          model:
+            "gemini-3.5-flash",
+
+          contents:
+            prompt,
+
+          config: {
+            responseMimeType:
+              "application/json"
+          }
+        });
+
+      // Gemini ka raw response
+      const responseText =
+        response.text;
+
+      // ==========================================
+      // SHOW GEMINI RESPONSE
+      // ==========================================
+
+      console.log(
+        "Gemini Evaluation Response:"
+      );
+
+      console.log(
+        responseText
+      );
+
+      // ==========================================
+      // CONVERT GEMINI JSON
+      // ==========================================
+
+      const evaluations =
+        JSON.parse(
+          responseText
+        );
+
+      // ==========================================
+      // VALIDATE GEMINI RESPONSE
+      // ==========================================
+
+      if (
+        !Array.isArray(
+          evaluations
+        )
+      ) {
+        throw new Error(
+          "Gemini did not return an evaluation array."
+        );
+      }
+
+      // Gemini ko har question ke liye
+      // evaluation return karni chahiye
+      if (
+        evaluations.length !==
+        questions.length
+      ) {
+        throw new Error(
+          "Gemini evaluation count does not match question count."
+        );
+      }
+
+      // ==========================================
+      // CLEAN EVALUATION DATA
+      // ==========================================
+
+      const cleanEvaluations =
+        evaluations.map(
+          (evaluation, index) => {
+            let score =
+              Number(
+                evaluation.score
+              );
+
+            // Invalid score ko 0 karna
+            if (
+              Number.isNaN(score)
+            ) {
+              score = 0;
+            }
+
+            // Score ko 0-10 ke range me rakhna
+            score = Math.round(
+              Math.max(
+                0,
+                Math.min(
+                  10,
+                  score
+                )
+              )
+            );
+
+            // Empty answer ke liye
+            // score hamesha 0 hona chahiye
+            if (
+              !answers[index] ||
+              answers[index].trim() === ""
+            ) {
+              score = 0;
+            }
+
+            return {
+              questionNumber:
+                index + 1,
+
+              score:
+                score,
+
+              feedback:
+                typeof evaluation.feedback ===
+                "string"
+                  ? evaluation.feedback
+                  : "No feedback available."
+            };
+          }
+        );
+
+      // ==========================================
+      // CALCULATE TOTAL AI SCORE
+      // ==========================================
+
+      const totalScore =
+        cleanEvaluations.reduce(
+          (
+            total,
+            evaluation
+          ) =>
+            total +
+            evaluation.score,
+          0
+        );
+
+      const maxScore =
+        questions.length * 10;
+
+      // ==========================================
+      // DEBUG FINAL EVALUATION
+      // ==========================================
+
+      console.log(
+        "AI Evaluation Completed."
+      );
+
+      console.log(
+        "Total AI Score:",
+        totalScore,
+        "/",
+        maxScore
+      );
+
+      console.log(
+        "Evaluations:",
+        cleanEvaluations
+      );
+
+      // ==========================================
+      // SEND RESULT TO FRONTEND
+      // ==========================================
+
+      res.json({
+        success: true,
+
+        evaluations:
+          cleanEvaluations,
+
+        totalScore:
+          totalScore,
+
+        maxScore:
+          maxScore
+      });
+
+    } catch (error) {
+      // ==========================================
+      // GEMINI EVALUATION ERROR
+      // ==========================================
+
+      console.error(
+        "Gemini Answer Evaluation Error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Failed to evaluate interview answers.",
+
+        error:
+          error.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// START SERVER
+// ==========================================
+
+// ==========================================
+// GEMINI AI ANSWER EVALUATION API
+// ==========================================
+// User ke interview answers ko Gemini evaluate karega.
+// Har answer ko 0-10 score aur short feedback milega.
+// ==========================================
+
+app.post(
+  "/api/evaluate-interview-answers",
+  async (req, res) => {
+    try {
+      // Frontend se questions aur answers receive karna
+      const {
+        questions,
+        answers
+      } = req.body;
+
+      // ==========================================
+      // BASIC VALIDATION
+      // ==========================================
+
+      if (
+        !Array.isArray(questions) ||
+        !Array.isArray(answers)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Questions and answers must be arrays."
+        });
+      }
+
+      // Questions aur answers ki count same honi chahiye
+      if (
+        questions.length !== answers.length
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Questions and answers count must be equal."
+        });
+      }
+
+      // ==========================================
+      // GEMINI EVALUATION PROMPT
+      // ==========================================
+
+      const prompt = `
+You are an expert technical interview evaluator.
+
+Evaluate the candidate's answers to the interview questions.
+
+For every question, evaluate the answer based on:
+
+1. Correctness
+2. Relevance
+3. Completeness
+4. Technical understanding
+5. Clarity
+
+SCORING SYSTEM:
+
+0 = No answer, skipped, meaningless text, or completely incorrect
+
+1-2 = Very poor answer
+
+3-4 = Weak answer with major problems
+
+5-6 = Average answer with basic understanding
+
+7-8 = Good answer with correct understanding
+
+9 = Very good answer with strong understanding
+
+10 = Excellent answer with accurate, complete and clear understanding
+
+IMPORTANT RULES:
+
+- If the answer is empty, give score 0.
+- If the answer is random or meaningless text, give score 0.
+- Do NOT give marks simply because an answer exists.
+- Evaluate the answer according to the actual question.
+- Do not invent information that is not present in the candidate's answer.
+- Be fair to beginner candidates.
+- A short but correct answer can still receive a good score.
+- Give a short and useful feedback for every answer.
+- Return exactly one evaluation for every question.
+- The question number must match the question position.
+
+INTERVIEW QUESTIONS AND CANDIDATE ANSWERS:
+
+${questions
+  .map(
+    (question, index) => `
+Question ${index + 1}:
+${question}
+
+Candidate Answer:
+${
+  answers[index] &&
+  answers[index].trim() !== ""
+    ? answers[index]
+    : "(No answer - skipped)"
+}
+`
+  )
+  .join("\n")}
+
+RETURN ONLY THIS JSON FORMAT:
+
+[
+  {
+    "questionNumber": 1,
+    "score": 0,
+    "feedback": "Short feedback about the candidate's answer."
+  }
+]
+
+IMPORTANT:
+
+- Return one object for every question.
+- Do not return markdown.
+- Do not return explanations outside the JSON.
+- Do not use percentage values.
+- Score must be an integer from 0 to 10.
+`;
+
+      // ==========================================
+      // DEBUG INFORMATION
+      // ==========================================
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "Gemini AI Answer Evaluation Started."
+      );
+
+      console.log(
+        "Total Questions:",
+        questions.length
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // ==========================================
+      // CALL GEMINI
+      // ==========================================
+
+      const response =
+        await ai.models.generateContent({
+          model:
+            "gemini-3.5-flash",
+
+          contents:
+            prompt,
+
+          config: {
+            responseMimeType:
+              "application/json"
+          }
+        });
+
+      // Gemini ka raw response
+      const responseText =
+        response.text;
+
+      // ==========================================
+      // SHOW GEMINI RESPONSE
+      // ==========================================
+
+      console.log(
+        "Gemini Evaluation Response:"
+      );
+
+      console.log(
+        responseText
+      );
+
+      // ==========================================
+      // CONVERT GEMINI JSON
+      // ==========================================
+
+      const evaluations =
+        JSON.parse(
+          responseText
+        );
+
+      // ==========================================
+      // VALIDATE GEMINI RESPONSE
+      // ==========================================
+
+      if (
+        !Array.isArray(
+          evaluations
+        )
+      ) {
+        throw new Error(
+          "Gemini did not return an evaluation array."
+        );
+      }
+
+      // Gemini ko har question ke liye
+      // evaluation return karni chahiye
+      if (
+        evaluations.length !==
+        questions.length
+      ) {
+        throw new Error(
+          "Gemini evaluation count does not match question count."
+        );
+      }
+
+      // ==========================================
+      // CLEAN EVALUATION DATA
+      // ==========================================
+
+      const cleanEvaluations =
+        evaluations.map(
+          (evaluation, index) => {
+            let score =
+              Number(
+                evaluation.score
+              );
+
+            // Invalid score ko 0 karna
+            if (
+              Number.isNaN(score)
+            ) {
+              score = 0;
+            }
+
+            // Score ko 0-10 ke range me rakhna
+            score = Math.round(
+              Math.max(
+                0,
+                Math.min(
+                  10,
+                  score
+                )
+              )
+            );
+
+            // Empty answer ke liye
+            // score hamesha 0 hona chahiye
+            if (
+              !answers[index] ||
+              answers[index].trim() === ""
+            ) {
+              score = 0;
+            }
+
+            return {
+              questionNumber:
+                index + 1,
+
+              score:
+                score,
+
+              feedback:
+                typeof evaluation.feedback ===
+                "string"
+                  ? evaluation.feedback
+                  : "No feedback available."
+            };
+          }
+        );
+
+      // ==========================================
+      // CALCULATE TOTAL AI SCORE
+      // ==========================================
+
+      const totalScore =
+        cleanEvaluations.reduce(
+          (
+            total,
+            evaluation
+          ) =>
+            total +
+            evaluation.score,
+          0
+        );
+
+      const maxScore =
+        questions.length * 10;
+
+      // ==========================================
+      // DEBUG FINAL EVALUATION
+      // ==========================================
+
+      console.log(
+        "AI Evaluation Completed."
+      );
+
+      console.log(
+        "Total AI Score:",
+        totalScore,
+        "/",
+        maxScore
+      );
+
+      console.log(
+        "Evaluations:",
+        cleanEvaluations
+      );
+
+      // ==========================================
+      // SEND RESULT TO FRONTEND
+      // ==========================================
+
+      res.json({
+        success: true,
+
+        evaluations:
+          cleanEvaluations,
+
+        totalScore:
+          totalScore,
+
+        maxScore:
+          maxScore
+      });
+
+    } catch (error) {
+      // ==========================================
+      // GEMINI EVALUATION ERROR
+      // ==========================================
+
+      console.error(
+        "Gemini Answer Evaluation Error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Failed to evaluate interview answers.",
+
+        error:
+          error.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// START SERVER
+// ==========================================
+
 const PORT = 5000;
 
 app.listen(
@@ -1277,3 +2342,27 @@ app.listen(
     );
   }
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
