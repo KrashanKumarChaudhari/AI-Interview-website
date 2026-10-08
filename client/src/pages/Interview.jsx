@@ -73,7 +73,12 @@ function Interview() {
 
   // Saare answers store honge
   // Empty string = skipped question
-  const [answers, setAnswers] = useState([]);
+  const [answers, setAnswers] = useState(() =>
+    Array.from(
+      { length: questions?.length || 0 },
+      () => ""
+    )
+  );
 
   // Interview save/evaluation process
   const [saving, setSaving] = useState(false);
@@ -255,6 +260,19 @@ function Interview() {
     const currentQuestion =
       questions[questionNumber - 1];
 
+    // Safety: every interview question always has one answer slot.
+    // Empty string means the question was skipped.
+    setAnswers((previousAnswers) => {
+      if (previousAnswers.length === questions.length) {
+        return previousAnswers;
+      }
+
+      return Array.from(
+        { length: questions.length },
+        (_, index) => previousAnswers[index] || ""
+      );
+    });
+
     // Previous speech stop
     window.speechSynthesis.cancel();
 
@@ -262,8 +280,11 @@ function Interview() {
     const video =
       document.querySelector("video");
 
-    // Video beginning se start
+    // Video beginning se start.
+    // loop=true se 8-second video question ki voice se chhoti ho
+    // to automatically beginning se repeat hoti rahegi.
     if (video) {
+      video.loop = true;
       video.currentTime = 0;
 
       video
@@ -285,7 +306,10 @@ function Interview() {
     // Voice complete hone par video pause
     speech.onend = () => {
       if (video) {
+        // Question voice khatam hote hi video pause karo
+        // aur next question ke liye start position par rakho.
         video.pause();
+        video.currentTime = 0;
       }
     };
 
@@ -300,6 +324,8 @@ function Interview() {
 
       if (video) {
         video.pause();
+        video.currentTime = 0;
+        video.loop = false;
       }
     };
   }, [questionNumber, questions]);
@@ -630,9 +656,9 @@ function Interview() {
               user_id: userId,
 
               // Interview configuration
-              role: role,
-              experience: experience,
-              interview_type: type,
+              role: role || "Resume Based Interview",
+              experience: experience || "Not Specified",
+              interview_type: type || "Resume Based",
 
               // AI normalized score
               score: normalizedScore,
@@ -750,11 +776,16 @@ function Interview() {
       // Question voice stop
       window.speechSynthesis.cancel();
 
-      // Current answer add karna
-      const updatedAnswers = [
-        ...answers,
-        answer.trim()
-      ];
+      // Current question ke exact index par answer save karo.
+      // Isse 5, 10, 15, 20, 25 ya 30 kisi bhi question count par
+      // questions aur answers ka count hamesha equal rahega.
+      const updatedAnswers = Array.from(
+        { length: questions.length },
+        (_, index) => answers[index] || ""
+      );
+
+      updatedAnswers[questionNumber - 1] =
+        answer.trim();
 
       // Answers state update
       setAnswers(
@@ -802,11 +833,14 @@ function Interview() {
       // Question voice stop
       window.speechSynthesis.cancel();
 
-      // Empty answer = skipped
-      const updatedAnswers = [
-        ...answers,
-        ""
-      ];
+      // Empty answer = skipped.
+      // Current question ke exact index par empty string save karna hai.
+      const updatedAnswers = Array.from(
+        { length: questions.length },
+        (_, index) => answers[index] || ""
+      );
+
+      updatedAnswers[questionNumber - 1] = "";
 
       // Answers state update
       setAnswers(
@@ -999,6 +1033,7 @@ function Interview() {
             key={questionNumber}
             src="/interviewer/interviewer.mp4"
             autoPlay
+            loop
             playsInline
             style={{
               width: "100%",
