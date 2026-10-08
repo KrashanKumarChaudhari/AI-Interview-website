@@ -35,7 +35,9 @@ function Interview() {
   useEffect(() => {
     if (resumeText) {
       console.log("=================================");
-      console.log("Resume Text received in Interview:");
+      console.log(
+        "Resume Text received in Interview:"
+      );
       console.log(resumeText);
       console.log("=================================");
     }
@@ -58,7 +60,10 @@ function Interview() {
   // LOGGED-IN USER
   // ==========================================
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(
+    localStorage.getItem("user")
+  );
+
   const userId = user?.id;
 
   // ==========================================
@@ -69,7 +74,8 @@ function Interview() {
   const [answer, setAnswer] = useState("");
 
   // Current question number
-  const [questionNumber, setQuestionNumber] = useState(1);
+  const [questionNumber, setQuestionNumber] =
+    useState(1);
 
   // Saare answers store honge
   // Empty string = skipped question
@@ -85,7 +91,8 @@ function Interview() {
 
   // ==========================================
   // CURRENT QUESTION
-  // Replay button aur speech dono isi question ko use karenge.
+  // Replay aur question speech isi question
+  // ko use karenge.
   // ==========================================
 
   const currentQuestion =
@@ -102,10 +109,20 @@ function Interview() {
     window.webkitSpeechRecognition;
 
   // Voice recognition object
-  const [recognition, setRecognition] = useState(null);
+  const [recognition, setRecognition] =
+    useState(null);
 
   // Microphone listening status
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] =
+    useState(false);
+
+  // ==========================================
+  // INTERVIEWER PAUSE / RESUME STATE
+  // Video + question voice ke liye.
+  // ==========================================
+
+  const [isPaused, setIsPaused] =
+    useState(false);
 
   // ==========================================
   // INITIALIZE VOICE RECOGNITION
@@ -117,6 +134,7 @@ function Interview() {
       console.log(
         "Speech recognition is not supported in this browser."
       );
+
       return;
     }
 
@@ -134,7 +152,9 @@ function Interview() {
     speechRecognition.interimResults = false;
 
     // Recognition object save karna
-    setRecognition(speechRecognition);
+    setRecognition(
+      speechRecognition
+    );
   }, []);
 
   // ==========================================
@@ -157,26 +177,36 @@ function Interview() {
         i < event.results.length;
         i++
       ) {
-        if (event.results[i].isFinal) {
+        if (
+          event.results[i].isFinal
+        ) {
           finalTranscript +=
-            event.results[i][0].transcript;
+            event.results[i][0]
+              .transcript;
         }
       }
 
       // Agar speech text mila hai
-      if (finalTranscript.trim() !== "") {
-        setAnswer((previousAnswer) => {
-          // Existing answer ke end me new speech add karna
-          if (previousAnswer.trim() !== "") {
-            return (
-              previousAnswer.trim() +
-              " " +
-              finalTranscript.trim()
-            );
-          }
+      if (
+        finalTranscript.trim() !== ""
+      ) {
+        setAnswer(
+          (previousAnswer) => {
+            // Existing answer ke end me
+            // new speech add karna
+            if (
+              previousAnswer.trim() !== ""
+            ) {
+              return (
+                previousAnswer.trim() +
+                " " +
+                finalTranscript.trim()
+              );
+            }
 
-          return finalTranscript.trim();
-        });
+            return finalTranscript.trim();
+          }
+        );
       }
     };
 
@@ -189,8 +219,10 @@ function Interview() {
 
       // Serious permission error
       if (
-        event.error === "not-allowed" ||
-        event.error === "service-not-allowed"
+        event.error ===
+          "not-allowed" ||
+        event.error ===
+          "service-not-allowed"
       ) {
         setIsListening(false);
       }
@@ -221,6 +253,7 @@ function Interview() {
       alert(
         "Voice input is not supported in this browser. Please use Google Chrome."
       );
+
       return;
     }
 
@@ -229,13 +262,16 @@ function Interview() {
       alert(
         "Voice recognition is not ready. Please try again."
       );
+
       return;
     }
 
     // Agar already listening hai
     if (isListening) {
       recognition.stop();
+
       setIsListening(false);
+
       return;
     }
 
@@ -267,15 +303,22 @@ function Interview() {
     // Previous speech stop
     window.speechSynthesis.cancel();
 
+    // New question start hote hi
+    // pause state false karna
+    setIsPaused(false);
+
     // Video element find karna
     const video =
-      document.querySelector("video");
+      document.getElementById(
+        "interviewer-video"
+      );
 
     // Video beginning se start.
     // Voice video se lambi ho sakti hai,
     // isliye video voice complete hone tak loop karega.
     if (video) {
       video.loop = true;
+
       video.currentTime = 0;
 
       video
@@ -297,11 +340,16 @@ function Interview() {
     // Voice complete hone par video pause
     speech.onend = () => {
       if (video) {
-        // Question voice khatam hote hi video pause karo
-        // aur next question ke liye start position par rakho.
+        // Question voice khatam hote hi
+        // video pause aur reset karo.
         video.pause();
+
         video.currentTime = 0;
       }
+
+      // Question complete ho gaya,
+      // isliye pause state false rakho.
+      setIsPaused(false);
     };
 
     // Question speak karna
@@ -315,20 +363,28 @@ function Interview() {
 
       if (video) {
         video.pause();
+
         video.currentTime = 0;
+
         video.loop = false;
       }
+
+      setIsPaused(false);
     };
   }, [questionNumber, questions]);
 
   // ==========================================
   // REPLAY CURRENT QUESTION
-  // Video + current question voice dobara start hogi.
+  // Video + current question voice dobara
+  // beginning se start hogi.
   // ==========================================
 
   const handleReplayQuestion = () => {
     // Pehle chal rahi question voice ko stop karo
     window.speechSynthesis.cancel();
+
+    // Replay ke baad pause state false
+    setIsPaused(false);
 
     // Current interviewer video find karo
     const video =
@@ -339,6 +395,7 @@ function Interview() {
     // Video ko beginning se start karo
     if (video) {
       video.loop = true;
+
       video.currentTime = 0;
 
       video
@@ -357,18 +414,72 @@ function Interview() {
     replaySpeech.pitch = 1;
     replaySpeech.volume = 1;
 
-    // Voice complete hone par video stop + reset
+    // Voice complete hone par
+    // video stop + reset
     replaySpeech.onend = () => {
       if (video) {
         video.pause();
+
         video.currentTime = 0;
       }
+
+      setIsPaused(false);
     };
 
     // Current question ko dobara speak karo
     window.speechSynthesis.speak(
       replaySpeech
     );
+  };
+
+  // ==========================================
+  // PAUSE / RESUME INTERVIEWER
+  // Video aur question voice dono ko
+  // pause/resume karega.
+  // ==========================================
+
+  const handlePauseResume = () => {
+    // Current interviewer video find karo
+    const video =
+      document.getElementById(
+        "interviewer-video"
+      );
+
+    // ==========================================
+    // PAUSE
+    // ==========================================
+
+    if (!isPaused) {
+      // Video pause karo
+      if (video) {
+        video.pause();
+      }
+
+      // Question voice pause karo
+      window.speechSynthesis.pause();
+
+      // Pause state ON
+      setIsPaused(true);
+
+      return;
+    }
+
+    // ==========================================
+    // RESUME
+    // ==========================================
+
+    // Video wahi se resume karo
+    if (video) {
+      video
+        .play()
+        .catch(() => {});
+    }
+
+    // Question voice wahi se resume karo
+    window.speechSynthesis.resume();
+
+    // Pause state OFF
+    setIsPaused(false);
   };
 
   // ==========================================
@@ -470,22 +581,26 @@ function Interview() {
       );
 
       // Gemini evaluation API call
-      const response = await fetch(
-        "http://localhost:5000/api/evaluate-interview-answers",
-        {
-          method: "POST",
+      const response =
+        await fetch(
+          "http://localhost:5000/api/evaluate-interview-answers",
+          {
+            method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-          body: JSON.stringify({
-            questions: questions,
-            answers: updatedAnswers
-          })
-        }
-      );
+            body: JSON.stringify({
+              questions:
+                questions,
+
+              answers:
+                updatedAnswers
+            })
+          }
+        );
 
       // Backend response JSON
       const data =
@@ -588,12 +703,25 @@ function Interview() {
     // Stop question voice
     window.speechSynthesis.cancel();
 
+    // Stop interviewer video
+    const video =
+      document.getElementById(
+        "interviewer-video"
+      );
+
+    if (video) {
+      video.pause();
+
+      video.currentTime = 0;
+    }
+
     // Stop microphone if active
     if (
       recognition &&
       isListening
     ) {
       recognition.stop();
+
       setIsListening(false);
     }
 
@@ -612,6 +740,7 @@ function Interview() {
       // to interview save nahi karenge.
       if (!evaluation) {
         setSaving(false);
+
         return;
       }
 
@@ -749,6 +878,7 @@ function Interview() {
         );
 
         setSaving(false);
+
         return;
       }
 
@@ -831,19 +961,26 @@ function Interview() {
       // Question voice stop
       window.speechSynthesis.cancel();
 
-      // Current question ke exact index par answer save karo.
-      // Isse 5, 10, 15, 20, 25 ya 30 kisi bhi question count par
-      // questions aur answers ka count hamesha equal rahega.
-      const updatedAnswers = Array.from(
-        { length: questions.length },
-        (_, index) =>
-          answers[index] || ""
-      );
+      // Current question ke exact index par
+      // answer save karo.
+      //
+      // Isse 5, 10, 15, 20, 25 ya 30
+      // kisi bhi question count par
+      // questions aur answers ka count
+      // hamesha equal rahega.
+      const updatedAnswers =
+        Array.from(
+          {
+            length:
+              questions.length
+          },
+          (_, index) =>
+            answers[index] || ""
+        );
 
       updatedAnswers[
         questionNumber - 1
-      ] =
-        answer.trim();
+      ] = answer.trim();
 
       // Answers state update
       setAnswers(
@@ -892,12 +1029,17 @@ function Interview() {
       window.speechSynthesis.cancel();
 
       // Empty answer = skipped.
-      // Current question ke exact index par empty string save karna hai.
-      const updatedAnswers = Array.from(
-        { length: questions.length },
-        (_, index) =>
-          answers[index] || ""
-      );
+      // Current question ke exact index par
+      // empty string save karna hai.
+      const updatedAnswers =
+        Array.from(
+          {
+            length:
+              questions.length
+          },
+          (_, index) =>
+            answers[index] || ""
+        );
 
       updatedAnswers[
         questionNumber - 1
@@ -950,7 +1092,8 @@ function Interview() {
           backgroundColor: "#172554",
           padding: "40px",
           borderRadius: "18px",
-          border: "1px solid #3730a3",
+          border:
+            "1px solid #3730a3",
           boxShadow:
             "0 20px 40px rgba(0, 0, 0, 0.25)"
         }}
@@ -1106,32 +1249,77 @@ function Interview() {
           />
         </div>
 
-        {/* Replay button for the interviewer question */}
-        <button
-          type="button"
-          onClick={
-            handleReplayQuestion
-          }
-          disabled={saving}
+        {/* ==========================================
+            REPLAY + PAUSE / RESUME BUTTONS
+            ========================================== */}
+
+        <div
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
             marginBottom: "20px",
-            padding: "10px 18px",
-            borderRadius: "8px",
-            border: "none",
-            backgroundColor:
-              saving
-                ? "#64748b"
-                : "#4f46e5",
-            color: "#ffffff",
-            cursor: saving
-              ? "not-allowed"
-              : "pointer",
-            fontSize: "14px",
-            fontWeight: "600"
+            flexWrap: "wrap"
           }}
         >
-          ▶ Replay Question
-        </button>
+          {/* Replay button */}
+          <button
+            type="button"
+            onClick={
+              handleReplayQuestion
+            }
+            disabled={saving}
+            style={{
+              padding:
+                "10px 18px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor:
+                saving
+                  ? "#64748b"
+                  : "#4f46e5",
+              color: "#ffffff",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
+              fontSize: "14px",
+              fontWeight: "600"
+            }}
+          >
+            ▶ Replay Question
+          </button>
+
+          {/* Pause / Resume button */}
+          <button
+            type="button"
+            onClick={
+              handlePauseResume
+            }
+            disabled={saving}
+            style={{
+              padding:
+                "10px 18px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor:
+                saving
+                  ? "#64748b"
+                  : isPaused
+                  ? "#16a34a"
+                  : "#f59e0b",
+              color: "#ffffff",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
+              fontSize: "14px",
+              fontWeight: "600"
+            }}
+          >
+            {isPaused
+              ? "▶ Resume Interview"
+              : "⏸ Pause Interview"}
+          </button>
+        </div>
 
         {/* Current interview question */}
         <div
