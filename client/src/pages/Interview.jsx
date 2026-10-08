@@ -84,6 +84,14 @@ function Interview() {
   const [saving, setSaving] = useState(false);
 
   // ==========================================
+  // CURRENT QUESTION
+  // Replay button aur speech dono isi question ko use karenge.
+  // ==========================================
+
+  const currentQuestion =
+    questions?.[questionNumber - 1] || "";
+
+  // ==========================================
   // VOICE ANSWER
   // User microphone se answer bol sakega.
   // Speech automatically text me convert hogi.
@@ -256,23 +264,6 @@ function Interview() {
       return;
     }
 
-    // Current question
-    const currentQuestion =
-      questions[questionNumber - 1];
-
-    // Safety: every interview question always has one answer slot.
-    // Empty string means the question was skipped.
-    setAnswers((previousAnswers) => {
-      if (previousAnswers.length === questions.length) {
-        return previousAnswers;
-      }
-
-      return Array.from(
-        { length: questions.length },
-        (_, index) => previousAnswers[index] || ""
-      );
-    });
-
     // Previous speech stop
     window.speechSynthesis.cancel();
 
@@ -281,8 +272,8 @@ function Interview() {
       document.querySelector("video");
 
     // Video beginning se start.
-    // loop=true se 8-second video question ki voice se chhoti ho
-    // to automatically beginning se repeat hoti rahegi.
+    // Voice video se lambi ho sakti hai,
+    // isliye video voice complete hone tak loop karega.
     if (video) {
       video.loop = true;
       video.currentTime = 0;
@@ -329,6 +320,56 @@ function Interview() {
       }
     };
   }, [questionNumber, questions]);
+
+  // ==========================================
+  // REPLAY CURRENT QUESTION
+  // Video + current question voice dobara start hogi.
+  // ==========================================
+
+  const handleReplayQuestion = () => {
+    // Pehle chal rahi question voice ko stop karo
+    window.speechSynthesis.cancel();
+
+    // Current interviewer video find karo
+    const video =
+      document.getElementById(
+        "interviewer-video"
+      );
+
+    // Video ko beginning se start karo
+    if (video) {
+      video.loop = true;
+      video.currentTime = 0;
+
+      video
+        .play()
+        .catch(() => {});
+    }
+
+    // Current question ki voice dobara create karo
+    const replaySpeech =
+      new SpeechSynthesisUtterance(
+        currentQuestion
+      );
+
+    // Same voice settings
+    replaySpeech.rate = 0.9;
+    replaySpeech.pitch = 1;
+    replaySpeech.volume = 1;
+
+    // Voice complete hone par video stop + reset
+    replaySpeech.onend = () => {
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
+    };
+
+    // Current question ko dobara speak karo
+    window.speechSynthesis.speak(
+      replaySpeech
+    );
+  };
 
   // ==========================================
   // LOGIN PROTECTION
@@ -656,24 +697,37 @@ function Interview() {
               user_id: userId,
 
               // Interview configuration
-              role: role || "Resume Based Interview",
-              experience: experience || "Not Specified",
-              interview_type: type || "Resume Based",
+              role:
+                role ||
+                "Resume Based Interview",
+
+              experience:
+                experience ||
+                "Not Specified",
+
+              interview_type:
+                type ||
+                "Resume Based",
 
               // AI normalized score
-              score: normalizedScore,
+              score:
+                normalizedScore,
 
               // Total questions
               total_questions:
                 questions.length,
 
               // Questions
-              questions: questions,
+              questions:
+                questions,
 
               // User answers
-              answers: updatedAnswers,
+              answers:
+                updatedAnswers,
+
               // AI evaluation data
-              evaluations: evaluation.evaluations
+              evaluations:
+                evaluation.evaluations
             })
           }
         );
@@ -715,7 +769,8 @@ function Interview() {
       navigate("/result", {
         state: {
           // Existing Result.jsx ke liye
-          score: normalizedScore,
+          score:
+            normalizedScore,
 
           // User answers
           answers:
@@ -781,10 +836,13 @@ function Interview() {
       // questions aur answers ka count hamesha equal rahega.
       const updatedAnswers = Array.from(
         { length: questions.length },
-        (_, index) => answers[index] || ""
+        (_, index) =>
+          answers[index] || ""
       );
 
-      updatedAnswers[questionNumber - 1] =
+      updatedAnswers[
+        questionNumber - 1
+      ] =
         answer.trim();
 
       // Answers state update
@@ -837,10 +895,13 @@ function Interview() {
       // Current question ke exact index par empty string save karna hai.
       const updatedAnswers = Array.from(
         { length: questions.length },
-        (_, index) => answers[index] || ""
+        (_, index) =>
+          answers[index] || ""
       );
 
-      updatedAnswers[questionNumber - 1] = "";
+      updatedAnswers[
+        questionNumber - 1
+      ] = "";
 
       // Answers state update
       setAnswers(
@@ -1030,6 +1091,7 @@ function Interview() {
           }}
         >
           <video
+            id="interviewer-video"
             key={questionNumber}
             src="/interviewer/interviewer.mp4"
             autoPlay
@@ -1043,6 +1105,33 @@ function Interview() {
             }}
           />
         </div>
+
+        {/* Replay button for the interviewer question */}
+        <button
+          type="button"
+          onClick={
+            handleReplayQuestion
+          }
+          disabled={saving}
+          style={{
+            marginBottom: "20px",
+            padding: "10px 18px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor:
+              saving
+                ? "#64748b"
+                : "#4f46e5",
+            color: "#ffffff",
+            cursor: saving
+              ? "not-allowed"
+              : "pointer",
+            fontSize: "14px",
+            fontWeight: "600"
+          }}
+        >
+          ▶ Replay Question
+        </button>
 
         {/* Current interview question */}
         <div
