@@ -1,184 +1,347 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* =========================================
+   FUTURISTIC AI HOME PAGE
+   ========================================= */
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
+.app {
+  --ai-bg: #070b18;
+  --ai-border: rgba(129, 140, 248, 0.22);
+  --ai-text: #f8fafc;
+  --ai-muted: #a7b2ca;
 
-.hero {
   position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 15% 15%, rgba(91, 33, 182, 0.22), transparent 38%),
+    radial-gradient(ellipse at 85% 35%, rgba(14, 165, 233, 0.12), transparent 34%),
+    var(--ai-bg) !important;
+  color: var(--ai-text);
 }
 
-#center {
+/* Subtle futuristic grid */
+.app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.15;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+/* =========================================
+   NAVBAR
+   ========================================= */
+
+.app .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px clamp(20px, 6vw, 90px);
+  background: rgba(7, 11, 24, 0.82) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-#next-steps {
+.app .logo {
+  font-size: 23px;
+  letter-spacing: -0.7px;
+  white-space: nowrap;
+}
+
+.app .nav-links {
   display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+.app .nav-links a {
+  color: #cbd5e1 !important;
+  text-decoration: none;
+  transition: color 0.25s ease;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+.app .nav-links a:hover {
+  color: #a5b4fc !important;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+.app .nav-links button {
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  border-radius: 10px;
+  padding: 10px 17px;
+  background: rgba(99, 102, 241, 0.14);
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
-.ticks {
+.app .nav-links button:hover {
+  transform: translateY(-2px);
+  background: rgba(99, 102, 241, 0.28);
+  box-shadow: 0 0 22px rgba(99, 102, 241, 0.18);
+}
+
+/* =========================================
+   HERO SECTION
+   ========================================= */
+
+.app .hero {
   position: relative;
+  min-height: 620px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 24px !important;
+  box-sizing: border-box;
+  background: transparent !important;
+}
+
+.app .hero-content {
   width: 100%;
+  max-width: 900px !important;
+  animation: aiFadeUp 0.8s ease both;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
+.app .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  margin: 0 auto 24px;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.1);
+  font-size: 13px !important;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.08);
+}
+
+.app .hero h1 {
+  max-width: 850px;
+  margin: 0 auto 24px !important;
+  font-size: clamp(40px, 6vw, 76px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -2.8px;
+}
+
+.app .hero h1 span {
+  display: inline-block;
+  background: linear-gradient(100deg, #a78bfa, #60a5fa, #67e8f9);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.app .description {
+  max-width: 680px !important;
+  color: var(--ai-muted) !important;
+  font-size: clamp(16px, 2vw, 19px) !important;
+  line-height: 1.9 !important;
+}
+
+/* Start Interview button */
+.app .start-btn {
+  margin-top: 8px;
+  padding: 16px 30px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(110deg, #7c3aed, #4f46e5 55%, #0284c7);
+  box-shadow:
+    0 8px 30px rgba(99, 102, 241, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.app .start-btn:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 14px 38px rgba(99, 102, 241, 0.4),
+    0 0 28px rgba(56, 189, 248, 0.15);
+}
+
+/* =========================================
+   ABOUT SECTION
+   ========================================= */
+
+.app #about {
+  position: relative;
+  padding: 90px 24px !important;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.35) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  scroll-margin-top: 90px;
+}
+
+.app #about h2,
+.app #features h2 {
+  font-size: clamp(28px, 4vw, 42px) !important;
+  letter-spacing: -1px;
+}
+
+.app #about p {
+  color: var(--ai-muted) !important;
+}
+
+/* =========================================
+   FEATURES SECTION
+   Important: flex-wrap keeps cards together.
+   Heading and description each take full row.
+   ========================================= */
+
+.app #features {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 22px !important;
+  padding: 90px 24px !important;
+  background: transparent !important;
+  scroll-margin-top: 90px;
+}
+
+/* Feature heading */
+.app #features > h2 {
+  flex: 0 0 100%;
+  width: 100%;
+  margin: 0 0 5px !important;
+  text-align: center;
+}
+
+/* Feature description — separate full-width row */
+.app #features > p {
+  flex: 0 0 100%;
+  width: 100%;
+  margin: 0 0 25px !important;
+  text-align: center;
+  color: var(--ai-muted) !important;
+}
+
+/* Only the three actual feature cards */
+.app #features > div {
+  position: relative;
+  flex: 0 1 300px;
+  width: 300px !important;
+  max-width: 100%;
+  min-height: 190px;
+  padding: 30px 25px !important;
+  box-sizing: border-box;
+  border: 1px solid var(--ai-border) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(145deg, rgba(30, 41, 75, 0.78), rgba(12, 18, 36, 0.88)) !important;
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  text-align: left !important;
+  transition:
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.app #features > div:hover {
+  transform: translateY(-7px);
+  border-color: rgba(129, 140, 248, 0.65) !important;
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.25),
+    0 0 25px rgba(99, 102, 241, 0.12) !important;
+}
+
+.app #features > div h3 {
+  margin-top: 0;
+  color: #e0e7ff !important;
+  font-size: 19px !important;
+}
+
+.app #features > div p {
+  color: var(--ai-muted) !important;
+  line-height: 1.8 !important;
+}
+
+/* =========================================
+   ANIMATION
+   ========================================= */
+
+@keyframes aiFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
   }
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+}
+
+/* =========================================
+   RESPONSIVE LAYOUT
+   ========================================= */
+
+@media (max-width: 700px) {
+  .app .navbar {
+    padding: 16px 18px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .app .nav-links {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px 14px;
+  }
+
+  .app .nav-links button {
+    padding: 9px 12px;
+  }
+
+  .app .hero {
+    min-height: 520px !important;
+    padding: 75px 20px !important;
+  }
+
+  .app .hero h1 {
+    letter-spacing: -1.5px;
+  }
+
+  .app #about,
+  .app #features {
+    padding: 65px 20px !important;
+  }
+
+  .app #features > div {
+    flex: 1 1 100%;
+    width: 100% !important;
+    max-width: 420px;
+    text-align: center !important;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

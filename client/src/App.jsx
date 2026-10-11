@@ -1,4 +1,5 @@
 // Interview details page
+import "./App.css";
 import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import Result from "./pages/Result";
