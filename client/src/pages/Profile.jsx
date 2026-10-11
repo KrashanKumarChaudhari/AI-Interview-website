@@ -1,85 +1,64 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Profile() {
-  // Store logged-in user information
   const [user, setUser] = useState(null);
-
-  // Store profile status or error message
   const [message, setMessage] = useState("");
-
-  // Store the user's interview history
   const [interviews, setInterviews] = useState([]);
-
-  // Track whether profile data is loading
   const [loading, setLoading] = useState(true);
 
-  // Used for navigating between pages
   const navigate = useNavigate();
 
-  // Handle user logout
+  // Clear login data and return to the Login page.
   const handleLogout = () => {
-    // Remove login information from localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
-    // Redirect to Login page
     navigate("/login");
   };
 
   useEffect(() => {
-    // Get JWT token from localStorage
     const token = localStorage.getItem("token");
 
-    // If token does not exist, user is not logged in
+    // Profile is available only to logged-in users.
     if (!token) {
       navigate("/login");
       return;
     }
 
-    // Fetch protected profile information
     const loadProfile = async () => {
       try {
-        // Request logged-in user's profile
+        // Fetch protected profile information.
         const profileResponse = await fetch(
           "http://localhost:5000/profile",
           {
             headers: {
-              Authorization: "Bearer " + token
-            }
+              Authorization: "Bearer " + token,
+            },
           }
         );
 
-        // Convert profile response to JSON
         const profileData = await profileResponse.json();
 
-        // Stop if profile request failed
         if (!profileResponse.ok || !profileData.user) {
           setMessage(
             profileData.message || "Failed to load profile."
           );
-          setLoading(false);
           return;
         }
 
-        // Save logged-in user information
         setUser(profileData.user);
+        setMessage("");
 
-        // Show profile success message
-        setMessage(profileData.message || "");
-
-        // Get the logged-in user's ID
+        // Fetch interview attempts belonging to this user.
         const userId = profileData.user.id;
 
-        // Fetch only this user's interview history
         const interviewResponse = await fetch(
           `http://localhost:5000/api/interviews/${userId}`
         );
 
-        // Convert interview response to JSON
         const interviewData = await interviewResponse.json();
 
-        // Check interview history request
         if (!interviewResponse.ok) {
           setMessage(
             interviewData.message ||
@@ -87,240 +66,215 @@ function Profile() {
           );
           setInterviews([]);
         } else {
-          // Store interview history
-          setInterviews(interviewData);
+          setInterviews(
+            Array.isArray(interviewData) ? interviewData : []
+          );
         }
       } catch (error) {
-        // Handle server/network errors
         console.error("Profile error:", error);
-
         setMessage(
-          "Server connection failed. Please make sure the backend is running."
+          "Server connection failed. Please check whether the backend is running."
         );
       } finally {
-        // Stop loading after all requests finish
         setLoading(false);
       }
     };
 
-    // Load profile and interview history
     loadProfile();
   }, [navigate]);
 
+  // Get initials for the user's profile avatar.
+  const initials = user?.name
+    ? user.name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase()
+    : "U";
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#0f172a",
-        color: "#ffffff",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "30px 20px"
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "700px",
-          backgroundColor: "#172554",
-          padding: "40px",
-          borderRadius: "18px",
-          border: "1px solid #3730a3",
-          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)"
-        }}
-      >
-        {/* Profile page heading */}
-        <h1
-          style={{
-            margin: "0 0 8px",
-            fontSize: "32px"
-          }}
-        >
-          My Profile
-        </h1>
+    <main className="profile-page">
+      <div className="profile-orb profile-orb-one" />
+      <div className="profile-orb profile-orb-two" />
 
-        {/* Profile status message */}
-        <p
-          style={{
-            color: "#a5b4fc",
-            marginBottom: "30px"
-          }}
-        >
-          {message}
-        </p>
+      <div className="profile-dashboard">
+        {/* Dashboard heading */}
+        <header className="profile-header">
+          <div>
+            <div className="profile-eyebrow">
+              <span className="profile-status-dot" />
+              AI MOCK INTERVIEW SYSTEM
+            </div>
 
-        {/* Show loading message while data is being fetched */}
-        {loading ? (
-          <div
-            style={{
-              backgroundColor: "#0f172a",
-              padding: "25px",
-              borderRadius: "12px",
-              color: "#cbd5e1",
-              textAlign: "center",
-              marginBottom: "30px"
-            }}
-          >
-            Loading profile...
+            <h1>My Profile</h1>
+
+            <p className="profile-subtitle">
+              Manage your account and track your interview journey.
+            </p>
           </div>
+
+          <button
+            className="profile-back-btn"
+            onClick={() => navigate("/")}
+          >
+            <span aria-hidden="true">←</span> Home
+          </button>
+        </header>
+
+        {/* Loading state */}
+        {loading ? (
+          <section className="profile-state-card">
+            <div className="profile-loader" />
+            <h2>Loading your dashboard</h2>
+            <p>Fetching your profile and interview history...</p>
+          </section>
         ) : (
           <>
-            {/* User profile information */}
+            {/* Account information */}
             {user && (
-              <div
-                style={{
-                  backgroundColor: "#0f172a",
-                  padding: "20px",
-                  borderRadius: "12px",
-                  marginBottom: "30px",
-                  border: "1px solid #334155"
-                }}
-              >
-                <p style={{ margin: "0 0 15px" }}>
-                  <strong>Name:</strong> {user.name}
-                </p>
+              <section className="profile-user-card">
+                <div className="profile-user-main">
+                  <div className="profile-avatar">{initials}</div>
 
-                <p style={{ margin: "0 0 15px" }}>
-                  <strong>ID:</strong> {user.id}
-                </p>
+                  <div className="profile-user-text">
+                    <span className="profile-card-label">
+                      ACCOUNT OVERVIEW
+                    </span>
 
-                <p style={{ margin: 0 }}>
-                  <strong>Email:</strong> {user.email}
-                </p>
+                    <h2>{user.name || "User"}</h2>
+
+                    <p>{user.email || "Email not available"}</p>
+                  </div>
+                </div>
+
+                <div className="profile-account-badge">
+                  <span className="profile-status-dot" />
+                  Account Active
+                </div>
+
+                <div className="profile-user-meta">
+                  <div className="profile-meta-item">
+                    <span>User ID</span>
+                    <strong>#{user.id}</strong>
+                  </div>
+
+                  <div className="profile-meta-item">
+                    <span>Account Name</span>
+                    <strong>{user.name || "User"}</strong>
+                  </div>
+
+                  <div className="profile-meta-item">
+                    <span>Interview Attempts</span>
+                    <strong>{interviews.length}</strong>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Show request errors without hiding the rest of the page. */}
+            {message && (
+              <div className="profile-error" role="alert">
+                <span aria-hidden="true">!</span>
+                {message}
               </div>
             )}
 
-            {/* Interview History Section */}
-            <div style={{ marginBottom: "30px" }}>
-              <h2
-                style={{
-                  margin: "0 0 18px",
-                  fontSize: "24px"
-                }}
-              >
-                Interview History
-              </h2>
+            {/* Interview history */}
+            <section className="profile-history-section">
+              <div className="profile-section-heading">
+                <div>
+                  <span className="profile-card-label">
+                    YOUR PROGRESS
+                  </span>
+                  <h2>Interview History</h2>
+                  <p>
+                    Review each attempt and open its detailed results.
+                  </p>
+                </div>
 
-              {/* Show message when no interviews exist */}
+                <div className="profile-history-count">
+                  {interviews.length}{" "}
+                  {interviews.length === 1 ? "ATTEMPT" : "ATTEMPTS"}
+                </div>
+              </div>
+
               {interviews.length === 0 ? (
-                <div
-                  style={{
-                    backgroundColor: "#0f172a",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    color: "#cbd5e1",
-                    border: "1px solid #334155"
-                  }}
-                >
-                  No interview history found.
+                <div className="profile-empty-state">
+                  <div className="profile-empty-icon">
+                    <span aria-hidden="true">◈</span>
+                  </div>
+
+                  <h3>No interviews yet</h3>
+
+                  <p>
+                    Your completed interview attempts will appear here.
+                    Start an interview to begin tracking your progress.
+                  </p>
+
+                  <button
+                    className="profile-primary-btn"
+                    onClick={() => navigate("/interview-setup")}
+                  >
+                    Start an Interview <span aria-hidden="true">→</span>
+                  </button>
                 </div>
               ) : (
-                /* Display every interview attempt */
-                interviews.map((interview) => (
-                  <div
-                    key={interview.id}
-                    style={{
-                      backgroundColor: "#0f172a",
-                      padding: "20px",
-                      borderRadius: "12px",
-                      marginBottom: "15px",
-                      border: "1px solid #334155"
-                    }}
-                  >
-                    {/* Display interview role */}
-                    <h3
-                      style={{
-                        margin: "0 0 8px",
-                        color: "#ffffff",
-                        fontSize: "19px"
-                      }}
+                <div className="profile-interview-list">
+                  {interviews.map((interview) => (
+                    <article
+                      className="profile-interview-card"
+                      key={interview.id}
                     >
-                      {interview.role}
-                    </h3>
+                      <div className="profile-interview-icon">
+                        <span aria-hidden="true">⌘</span>
+                      </div>
 
-                    {/* Display attempt number calculated by backend */}
-                    <p
-                      style={{
-                        margin: "0 0 15px",
-                        color: "#a5b4fc",
-                        fontSize: "15px"
-                      }}
-                    >
-                      Attempt {interview.attempt_number || 1}
-                    </p>
+                      <div className="profile-interview-info">
+                        <h3>{interview.role || "Mock Interview"}</h3>
 
-                    {/* Open complete interview details */}
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/interview-details/${interview.id}`
-                        )
-                      }
-                      style={{
-                        padding: "10px 18px",
-                        backgroundColor: "#4f46e5",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      View Details
-                    </button>
-                  </div>
-                ))
+                        <p>
+                          Attempt {interview.attempt_number || 1}
+                          <span className="profile-inline-dot">•</span>
+                          Interview ID #{interview.id}
+                        </p>
+                      </div>
+
+                      <button
+                        className="profile-details-btn"
+                        onClick={() =>
+                          navigate(
+                            `/interview-details/${interview.id}`
+                          )
+                        }
+                      >
+                        View Details <span aria-hidden="true">↗</span>
+                      </button>
+                    </article>
+                  ))}
+                </div>
               )}
-            </div>
+            </section>
+
+            {/* Account actions */}
+            <footer className="profile-footer">
+              <p>
+                <span className="profile-footer-indicator" />
+                Your interview journey, all in one place.
+              </p>
+
+              <button
+                className="profile-logout-btn"
+                onClick={handleLogout}
+              >
+                <span aria-hidden="true">↪</span> Logout
+              </button>
+            </footer>
           </>
         )}
-
-        {/* Profile action buttons */}
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            flexWrap: "wrap"
-          }}
-        >
-          {/* Return to Home page */}
-          <button
-            onClick={() => navigate("/")}
-            style={{
-              padding: "12px 22px",
-              backgroundColor: "#4f46e5",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
-          >
-            Back to Home
-          </button>
-
-          {/* Logout button */}
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "12px 22px",
-              backgroundColor: "#dc2626",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
-          >
-            Logout
-          </button>
-        </div>
       </div>
-    </div>
+    </main>
   );
 }
 
