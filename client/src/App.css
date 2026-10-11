@@ -2707,3 +2707,36 @@
     font-size: 7px;
   }
 }
+
+
+
+/* Signup page refinements */
+
+.signup-card {
+  max-width: 470px;
+}
+
+.signup-card .login-brand {
+  margin-bottom: 28px;
+}
+
+.signup-card .login-heading {
+  margin-bottom: 25px;
+}
+
+.signup-card .login-form {
+  gap: 16px;
+}
+
+.signup-card .login-input-wrap {
+  min-height: 48px;
+}
+
+.signup-card .login-input-wrap input {
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+.signup-submit-btn {
+  margin-top: 6px;
+}
