@@ -1071,436 +1071,312 @@ function Interview() {
       );
     };
 
+  
   // ==========================================
-  // INTERVIEW UI
+  // FUTURISTIC AI INTERVIEW ROOM UI
   // ==========================================
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#0f172a",
-        color: "#ffffff",
-        padding: "40px 20px"
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "800px",
-          margin: "0 auto",
-          backgroundColor: "#172554",
-          padding: "40px",
-          borderRadius: "18px",
-          border:
-            "1px solid #3730a3",
-          boxShadow:
-            "0 20px 40px rgba(0, 0, 0, 0.25)"
-        }}
-      >
-        {/* Interview heading */}
-        <h1
-          style={{
-            margin: "0 0 10px",
-            fontSize: "32px"
-          }}
-        >
-          AI Mock Interview
-        </h1>
+    <div className="interview-page">
+      {/* Decorative background glows */}
+      <div className="interview-glow interview-glow-one" />
+      <div className="interview-glow interview-glow-two" />
 
-        <p
-          style={{
-            color: "#a5b4fc",
-            marginBottom: "30px"
-          }}
-        >
-          Answer the questions to
-          complete your interview.
-        </p>
+      <main className="interview-shell">
+        {/* Top header */}
+        <header className="interview-topbar">
+          <div className="interview-brand">
+            <div className="interview-brand-icon">✦</div>
+            <div>
+              <strong>AI INTERVIEW</strong>
+              <span>INTERVIEW STUDIO</span>
+            </div>
+          </div>
+
+          <div className="interview-live-status">
+            <span className="interview-live-dot" />
+            SESSION ACTIVE
+          </div>
+        </header>
+
+        {/* Interview title */}
+        <section className="interview-heading">
+          <div className="interview-heading-label">
+            <span>✧</span> YOUR AI-POWERED SESSION
+          </div>
+
+          <h1>
+            AI Mock <span>Interview</span>
+          </h1>
+
+          <p>
+            Stay focused, express your thoughts, and showcase your skills.
+          </p>
+        </section>
 
         {/* Interview configuration */}
-        <div
-          style={{
-            backgroundColor: "#0f172a",
-            padding: "20px",
-            borderRadius: "12px",
-            marginBottom: "30px",
-            border:
-              "1px solid #334155"
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 10px"
-            }}
-          >
-            <strong>Role:</strong>{" "}
-            {role}
-          </p>
+        <section className="interview-config">
+          <div className="interview-config-item">
+            <span className="interview-config-icon">💼</span>
+            <div>
+              <span className="interview-config-label">ROLE</span>
+              <strong>{role || "Resume Based"}</strong>
+            </div>
+          </div>
 
-          <p
-            style={{
-              margin: "0 0 10px"
-            }}
-          >
-            <strong>
-              Experience:
-            </strong>{" "}
-            {experience}
-          </p>
+          <div className="interview-config-item">
+            <span className="interview-config-icon">📈</span>
+            <div>
+              <span className="interview-config-label">EXPERIENCE</span>
+              <strong>{experience || "Not specified"}</strong>
+            </div>
+          </div>
 
-          <p
-            style={{
-              margin: "0 0 10px"
-            }}
-          >
-            <strong>
-              Interview Type:
-            </strong>{" "}
-            {type}
-          </p>
+          <div className="interview-config-item">
+            <span className="interview-config-icon">🎯</span>
+            <div>
+              <span className="interview-config-label">INTERVIEW TYPE</span>
+              <strong>{type || "Resume Based"}</strong>
+            </div>
+          </div>
 
-          <p
-            style={{
-              margin: 0
-            }}
-          >
-            <strong>
-              Total Questions:
-            </strong>{" "}
-            {questions.length}
-          </p>
-        </div>
+          <div className="interview-config-item">
+            <span className="interview-config-icon">❓</span>
+            <div>
+              <span className="interview-config-label">TOTAL QUESTIONS</span>
+              <strong>{questions.length}</strong>
+            </div>
+          </div>
+        </section>
 
-        {/* Interview progress */}
-        <div
-          style={{
-            marginBottom: "20px"
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 8px",
-              color: "#cbd5e1"
-            }}
-          >
-            Question{" "}
-            {questionNumber} of{" "}
-            {questions.length}
-          </p>
+        {/* Question progress */}
+        <section className="interview-progress-panel">
+          <div className="interview-progress-top">
+            <div>
+              <span className="interview-progress-caption">
+                INTERVIEW PROGRESS
+              </span>
+              <h2>
+                Question <span>{questionNumber}</span>
+                <span className="interview-progress-total">
+                  {" "}/ {questions.length}
+                </span>
+              </h2>
+            </div>
 
-          {/* Progress bar */}
+            <div className="interview-progress-percent">
+              {Math.round(
+                (questionNumber / questions.length) * 100
+              )}%
+            </div>
+          </div>
+
           <div
-            style={{
-              width: "100%",
-              height: "8px",
-              backgroundColor:
-                "#334155",
-              borderRadius: "10px",
-              overflow: "hidden"
-            }}
+            className="interview-progress-track"
+            role="progressbar"
+            aria-label="Interview progress"
+            aria-valuemin={0}
+            aria-valuemax={questions.length}
+            aria-valuenow={questionNumber}
           >
             <div
+              className="interview-progress-fill"
               style={{
                 width: `${
-                  (questionNumber /
-                    questions.length) *
-                  100
-                }%`,
-                height: "100%",
-                backgroundColor:
-                  "#6366f1",
-                borderRadius: "10px"
+                  (questionNumber / questions.length) * 100
+                }%`
               }}
-            ></div>
+            />
           </div>
+        </section>
+
+        {/* Main interview workspace */}
+        <div className="interview-workspace">
+          {/* AI interviewer panel */}
+          <section className="interview-panel interviewer-panel">
+            <div className="interview-panel-heading">
+              <div>
+                <span className="interview-panel-eyebrow">
+                  YOUR INTERVIEWER
+                </span>
+                <h2>AI Interviewer</h2>
+              </div>
+
+              <span className="interviewer-online">
+                <span className="interview-live-dot" />
+                Online
+              </span>
+            </div>
+
+            {/* Keep the original video ID and source */}
+            <div className="interviewer-video-frame">
+              <div className="interviewer-video-glow" />
+
+              <video
+                id="interviewer-video"
+                key={questionNumber}
+                src="/interviewer/interviewer.mp4"
+                autoPlay
+                loop
+                playsInline
+                className="interviewer-video"
+              />
+
+              <div className="interviewer-video-caption">
+                <span className="interviewer-caption-dot" />
+                AI INTERVIEWER
+              </div>
+            </div>
+
+            {/* Replay and pause/resume controls */}
+            <div className="interviewer-controls">
+              <button
+                type="button"
+                className="interview-secondary-btn"
+                onClick={handleReplayQuestion}
+                disabled={saving}
+              >
+                <span>↻</span>
+                Replay Question
+              </button>
+
+              <button
+                type="button"
+                className={
+                  isPaused
+                    ? "interview-secondary-btn interview-resume-btn"
+                    : "interview-secondary-btn"
+                }
+                onClick={handlePauseResume}
+                disabled={saving}
+              >
+                <span>{isPaused ? "▶" : "Ⅱ"}</span>
+                {isPaused ? "Resume" : "Pause"}
+              </button>
+            </div>
+
+            <div className="interviewer-tip">
+              <span>✦</span>
+              Listen carefully before answering the question.
+            </div>
+          </section>
+
+          {/* Question and answer panel */}
+          <section className="interview-panel answer-panel">
+            <div className="interview-panel-heading">
+              <div>
+                <span className="interview-panel-eyebrow">
+                  QUESTION {questionNumber}
+                </span>
+                <h2>It's your turn</h2>
+              </div>
+
+              <div className="question-number-badge">
+                {String(questionNumber).padStart(2, "0")}
+              </div>
+            </div>
+
+            {/* Current question */}
+            <div className="interview-question-card">
+              <div className="interview-question-icon">Q</div>
+
+              <h3>{currentQuestion}</h3>
+            </div>
+
+            {/* Answer editor header */}
+            <div className="answer-editor-heading">
+              <label htmlFor="interview-answer">
+                Your Answer
+              </label>
+
+              <span>
+                {answer.trim()
+                  ? `${answer.trim().split(/\s+/).length} words`
+                  : "Type or speak"}
+              </span>
+            </div>
+
+            {/* Answer text input */}
+            <textarea
+              id="interview-answer"
+              className="interview-answer-input"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Start typing your answer here. Explain your approach clearly..."
+              rows={8}
+              disabled={saving}
+            />
+
+            {/* Voice answer controls */}
+            <div className="interview-voice-row">
+              <div className="interview-voice-description">
+                <span className="interview-mic-icon">🎙</span>
+                <div>
+                  <strong>
+                    {isListening ? "Listening to you..." : "Voice Answer"}
+                  </strong>
+                  <span>
+                    {isListening
+                      ? "Speak clearly into your microphone"
+                      : "Use your microphone to answer"}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  isListening
+                    ? "interview-mic-btn interview-mic-active"
+                    : "interview-mic-btn"
+                }
+                onClick={handleVoiceAnswer}
+                disabled={saving}
+              >
+                {isListening ? "■ Stop" : "🎤 Speak"}
+              </button>
+            </div>
+
+            {/* Submit and skip actions */}
+            <div className="interview-answer-actions">
+              <button
+                type="button"
+                className="interview-skip-btn"
+                onClick={handleSkipQuestion}
+                disabled={saving}
+              >
+                Skip Question <span>→</span>
+              </button>
+
+              <button
+                type="button"
+                className="interview-submit-btn"
+                onClick={handleSubmitAnswer}
+                disabled={saving}
+              >
+                {saving
+                  ? "Evaluating with AI..."
+                  : questionNumber === questions.length
+                  ? "Finish Interview"
+                  : "Submit Answer"}
+
+                {!saving && <span>→</span>}
+              </button>
+            </div>
+
+            <p className="interview-privacy-note">
+              <span>🔒</span>
+              Your answers are evaluated by AI when you finish.
+            </p>
+          </section>
         </div>
 
-        {/* ==========================================
-            AI INTERVIEWER VIDEO
-            ========================================== */}
-
-        <div
-          style={{
-            width: "100%",
-            aspectRatio: "16 / 9",
-            backgroundColor:
-              "#020617",
-            borderRadius: "14px",
-            overflow: "hidden",
-            marginBottom: "20px",
-            border:
-              "1px solid #334155"
-          }}
-        >
-          <video
-            id="interviewer-video"
-            key={questionNumber}
-            src="/interviewer/interviewer.mp4"
-            autoPlay
-            loop
-            playsInline
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block"
-            }}
-          />
-        </div>
-
-        {/* ==========================================
-            REPLAY + PAUSE / RESUME BUTTONS
-            ========================================== */}
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "20px",
-            flexWrap: "wrap"
-          }}
-        >
-          {/* Replay button */}
-          <button
-            type="button"
-            onClick={
-              handleReplayQuestion
-            }
-            disabled={saving}
-            style={{
-              padding:
-                "10px 18px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor:
-                saving
-                  ? "#64748b"
-                  : "#4f46e5",
-              color: "#ffffff",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "14px",
-              fontWeight: "600"
-            }}
-          >
-            ▶ Replay Question
-          </button>
-
-          {/* Pause / Resume button */}
-          <button
-            type="button"
-            onClick={
-              handlePauseResume
-            }
-            disabled={saving}
-            style={{
-              padding:
-                "10px 18px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor:
-                saving
-                  ? "#64748b"
-                  : isPaused
-                  ? "#16a34a"
-                  : "#f59e0b",
-              color: "#ffffff",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "14px",
-              fontWeight: "600"
-            }}
-          >
-            {isPaused
-              ? "▶ Resume Interview"
-              : "⏸ Pause Interview"}
-          </button>
-        </div>
-
-        {/* Current interview question */}
-        <div
-          style={{
-            backgroundColor:
-              "#0f172a",
-            padding: "25px",
-            borderRadius: "12px",
-            marginBottom: "20px",
-            border:
-              "1px solid #334155"
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 10px",
-              color: "#a5b4fc",
-              fontSize: "14px",
-              fontWeight: "600",
-              textTransform:
-                "uppercase"
-            }}
-          >
-            Interviewer Question
-          </p>
-
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "22px",
-              lineHeight: "1.5"
-            }}
-          >
-            {
-              questions[
-                questionNumber - 1
-              ]
-            }
-          </h2>
-        </div>
-
-        {/* ==========================================
-            VOICE ANSWER BUTTON
-            ========================================== */}
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "flex-end",
-            marginBottom: "10px"
-          }}
-        >
-          <button
-            type="button"
-            onClick={
-              handleVoiceAnswer
-            }
-            disabled={saving}
-            style={{
-              padding:
-                "10px 18px",
-              backgroundColor:
-                isListening
-                  ? "#dc2626"
-                  : "#4f46e5",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "14px",
-              fontWeight: "600"
-            }}
-          >
-            {isListening
-              ? "🛑 Stop Speaking"
-              : "🎤 Speak Answer"}
-          </button>
-        </div>
-
-        {/* Answer input */}
-        <textarea
-          value={answer}
-          onChange={(e) =>
-            setAnswer(
-              e.target.value
-            )
-          }
-          placeholder="Type your answer here..."
-          rows="8"
-          disabled={saving}
-          style={{
-            width: "100%",
-            boxSizing:
-              "border-box",
-            padding: "15px",
-            backgroundColor:
-              "#0f172a",
-            color: "#ffffff",
-            border:
-              "1px solid #475569",
-            borderRadius: "10px",
-            resize: "vertical",
-            fontSize: "16px",
-            outline: "none",
-            marginBottom: "20px",
-            opacity: saving
-              ? 0.6
-              : 1
-          }}
-        />
-
-        {/* Submit and Skip buttons */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "flex-end",
-            gap: "12px"
-          }}
-        >
-          {/* Skip button */}
-          <button
-            onClick={
-              handleSkipQuestion
-            }
-            disabled={saving}
-            style={{
-              padding:
-                "12px 24px",
-              backgroundColor:
-                saving
-                  ? "#64748b"
-                  : "#475569",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
-          >
-            Skip Question
-          </button>
-
-          {/* Submit / Finish button */}
-          <button
-            onClick={
-              handleSubmitAnswer
-            }
-            disabled={saving}
-            style={{
-              padding:
-                "12px 24px",
-              backgroundColor:
-                saving
-                  ? "#64748b"
-                  : "#4f46e5",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
-          >
-            {saving
-              ? "Evaluating with AI..."
-              : questionNumber ===
-                questions.length
-              ? "Finish Interview"
-              : "Submit Answer"}
-          </button>
-        </div>
-      </div>
+        {/* Bottom session note */}
+        <footer className="interview-bottom-note">
+          <span>✦</span>
+          Take your time. Clear, structured answers make a difference.
+        </footer>
+      </main>
     </div>
   );
 }
