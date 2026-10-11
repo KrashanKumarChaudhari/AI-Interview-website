@@ -1,416 +1,379 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 function InterviewDetails() {
-  // Get the selected interview ID from the URL
   const { id } = useParams();
-
-  // Used for navigating between pages
   const navigate = useNavigate();
 
-  // Store selected interview details
   const [interview, setInterview] = useState(null);
-
-  // Store loading state while data is being fetched
   const [loading, setLoading] = useState(true);
-
-  // Store error message if API request fails
   const [error, setError] = useState("");
 
-  // Get the logged-in user from localStorage
-  const user = JSON.parse(localStorage.getItem("user"));
-  const userId = user?.id;
+  // Safely read the logged-in user's ID.
+  let userId = null;
 
-  // Protect this page from logged-out users
+  try {
+    const storedUser = JSON.parse(
+      localStorage.getItem("user") || "null"
+    );
+    userId = storedUser?.id;
+  } catch {
+    userId = null;
+  }
+
+  // Redirect logged-out users to the Login page.
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !localStorage.getItem("token")) {
       navigate("/login", { replace: true });
     }
   }, [userId, navigate]);
 
-  // Don't show the page if user is logged out
-  if (!userId) {
-    return null;
-  }
-
+  // Fetch the selected interview attempt.
   useEffect(() => {
-    // Fetch details of the selected interview attempt
-    fetch(
-      `http://localhost:5000/api/interviews/details/${id}`,
-      {
-        headers: {
-          // Send the logged-in user's JWT token to the backend
-          Authorization:
-            "Bearer " +
-            localStorage.getItem("token")
-        }
-      }
-    )
-      .then((response) => {
+    const token = localStorage.getItem("token");
+
+    if (!userId || !token) {
+      setLoading(false);
+      return;
+    }
+
+    const loadInterviewDetails = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          `http://localhost:5000/api/interviews/details/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
         if (!response.ok) {
           throw new Error(
-            "Interview details not found"
+            data.message || "Interview details not found."
           );
         }
 
-        return response.json();
-      })
-      .then((data) => {
-        // Save interview data in state
         setInterview(data);
-
-        // Stop loading after successful response
-        setLoading(false);
-      })
-      .catch((error) => {
-        // Handle API or server errors
-        console.error(
-          "Interview details error:",
-          error
-        );
-
+      } catch (err) {
+        console.error("Interview details error:", err);
         setError(
-          "Failed to load interview details."
+          err.message || "Failed to load interview details."
         );
-
+      } finally {
         setLoading(false);
-      });
-  }, [id]);
+      }
+    };
 
-  // Show loading message while API request is running
+    loadInterviewDetails();
+  }, [id, userId]);
+
+  // All hooks are called before any conditional return.
+  if (!userId || !localStorage.getItem("token")) {
+    return null;
+  }
+
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#0f172a",
-          color: "#ffffff",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          fontSize: "20px"
-        }}
-      >
-        Loading interview details...
-      </div>
+      <main className="details-page">
+        <div className="details-state-card">
+          <div className="details-loader" />
+          <h2>Loading interview report</h2>
+          <p>Preparing your AI evaluation and answers...</p>
+        </div>
+      </main>
     );
   }
 
-  // Show error message if interview was not found
-  if (error) {
+  if (error || !interview) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#0f172a",
-          color: "#ffffff",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexDirection: "column",
-          gap: "20px"
-        }}
-      >
-        <h2>{error}</h2>
-
-        <button
-          onClick={() => navigate("/profile")}
-          style={{
-            padding: "12px 22px",
-            backgroundColor: "#4f46e5",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "600"
-          }}
-        >
-          Back to Profile
-        </button>
-      </div>
+      <main className="details-page">
+        <div className="details-state-card">
+          <div className="details-state-icon">!</div>
+          <span className="details-eyebrow">REPORT UNAVAILABLE</span>
+          <h2>Unable to load interview</h2>
+          <p>
+            {error || "The requested interview record was not found."}
+          </p>
+          <button
+            className="details-primary-btn"
+            onClick={() => navigate("/profile")}
+          >
+            ← Back to Profile
+          </button>
+        </div>
+      </main>
     );
   }
+
+  // Ensure optional database fields are treated as arrays.
+  const questions = Array.isArray(interview.questions)
+    ? interview.questions
+    : [];
+
+  const answers = Array.isArray(interview.answers)
+    ? interview.answers
+    : [];
+
+  const evaluations = Array.isArray(interview.evaluations)
+    ? interview.evaluations
+    : [];
+
+  const score = Number(interview.score) || 0;
+  const totalQuestions = Number(interview.total_questions) || 0;
+
+  const percentage =
+    totalQuestions > 0
+      ? Math.min(
+          100,
+          Math.max(0, Math.round((score / totalQuestions) * 100))
+        )
+      : 0;
+
+  const completedDate = interview.created_at
+    ? new Date(interview.created_at).toLocaleString()
+    : "Date unavailable";
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#0f172a",
-        color: "#ffffff",
-        padding: "40px 20px"
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "800px",
-          margin: "0 auto",
-          backgroundColor: "#172554",
-          padding: "40px",
-          borderRadius: "18px",
-          border: "1px solid #3730a3",
-          boxShadow:
-            "0 20px 40px rgba(0, 0, 0, 0.25)"
-        }}
-      >
-        {/* Page heading */}
-        <h1
-          style={{
-            margin: "0 0 10px",
-            fontSize: "32px"
-          }}
-        >
-          Interview Details
-        </h1>
+    <main className="details-page">
+      <div className="details-background-glow details-glow-one" />
+      <div className="details-background-glow details-glow-two" />
 
-        <p
-          style={{
-            color: "#a5b4fc",
-            marginBottom: "30px"
-          }}
-        >
-          Detailed information about this interview attempt
-        </p>
+      <div className="details-dashboard">
+        {/* Page header */}
+        <header className="details-header">
+          <div>
+            <span className="details-eyebrow">
+              <span className="details-live-dot" />
+              AI MOCK INTERVIEW SYSTEM
+            </span>
 
-        {/* Basic interview information */}
-        <div
-          style={{
-            backgroundColor: "#0f172a",
-            padding: "25px",
-            borderRadius: "12px",
-            border: "1px solid #334155",
-            marginBottom: "30px"
-          }}
-        >
-          <p style={{ margin: "0 0 18px" }}>
-            <strong>Role:</strong>{" "}
-            {interview.role}
-          </p>
+            <h1>Interview Report</h1>
 
-          <p style={{ margin: "0 0 18px" }}>
-            <strong>Experience:</strong>{" "}
-            {interview.experience}
-          </p>
+            <p>
+              Review your performance, answers and personalized AI feedback.
+            </p>
+          </div>
 
-          <p style={{ margin: "0 0 18px" }}>
-            <strong>Interview Type:</strong>{" "}
-            {interview.interview_type}
-          </p>
-
-          <p
-            style={{
-              margin: "0 0 18px",
-              color: "#a5b4fc"
-            }}
+          <button
+            className="details-back-btn"
+            onClick={() => navigate("/profile")}
           >
-            <strong>Score:</strong>{" "}
-            {interview.score} /{" "}
-            {interview.total_questions}
-          </p>
+            ← Profile
+          </button>
+        </header>
 
-          <p
-            style={{
-              margin: 0,
-              color: "#94a3b8"
-            }}
-          >
-            <strong>Date:</strong>{" "}
-            {new Date(
-              interview.created_at
-            ).toLocaleString()}
-          </p>
-        </div>
+        {/* Main score and interview summary */}
+        <section className="details-overview">
+          <div className="details-score-card">
+            <span className="details-card-label">OVERALL SCORE</span>
 
-        {/* AI Evaluation summary */}
-        {interview.evaluations &&
-          interview.evaluations.length > 0 && (
             <div
-              style={{
-                backgroundColor: "#1e1b4b",
-                padding: "22px",
-                borderRadius: "12px",
-                border:
-                  "1px solid #6366f1",
-                marginBottom: "30px"
-              }}
+              className="details-score-ring"
+              style={{ "--score-progress": `${percentage}%` }}
+              role="img"
+              aria-label={`Overall score: ${percentage}%`}
             >
-              <h2
-                style={{
-                  margin: "0 0 10px",
-                  fontSize: "22px"
-                }}
-              >
-                🤖 AI Evaluation
-              </h2>
+              <div className="details-score-ring-inner">
+                <strong>{percentage}%</strong>
+                <span>PERFORMANCE</span>
+              </div>
+            </div>
 
-              <p
-                style={{
-                  margin: 0,
-                  color: "#c7d2fe",
-                  lineHeight: "1.6"
-                }}
-              >
-                Gemini AI evaluated your
-                answers based on correctness,
-                relevance, completeness,
-                technical understanding and
-                clarity.
+            <h2>{score} / {totalQuestions}</h2>
+            <p>Interview score</p>
+          </div>
+
+          <div className="details-info-card">
+            <span className="details-card-label">INTERVIEW SUMMARY</span>
+
+            <div className="details-info-row">
+              <span className="details-info-icon">⌘</span>
+              <div>
+                <span>Target Role</span>
+                <strong>{interview.role || "Not specified"}</strong>
+              </div>
+            </div>
+
+            <div className="details-info-row">
+              <span className="details-info-icon">◷</span>
+              <div>
+                <span>Experience Level</span>
+                <strong>
+                  {interview.experience || "Not specified"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="details-info-row">
+              <span className="details-info-icon">◇</span>
+              <div>
+                <span>Interview Type</span>
+                <strong>
+                  {interview.interview_type || "Not specified"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="details-info-row">
+              <span className="details-info-icon">▦</span>
+              <div>
+                <span>Completed On</span>
+                <strong>{completedDate}</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* AI evaluation introduction */}
+        {evaluations.length > 0 && (
+          <section className="details-ai-banner">
+            <div className="details-ai-icon">✧</div>
+            <div>
+              <h2>AI Evaluation</h2>
+              <p>
+                Your answers were evaluated for correctness, relevance,
+                completeness, technical understanding and clarity.
               </p>
             </div>
-          )}
-
-        {/* Questions and answers section */}
-        <h2
-          style={{
-            margin: "0 0 20px",
-            fontSize: "24px"
-          }}
-        >
-          Questions & Answers
-        </h2>
-
-        {/* Display every question with its answer and AI evaluation */}
-        {interview.questions &&
-        interview.questions.length > 0 ? (
-          interview.questions.map(
-            (question, index) => {
-              // Get AI evaluation for the current question
-              const evaluation =
-                interview.evaluations &&
-                interview.evaluations[index];
-
-              const aiScore =
-                evaluation?.score;
-
-              const aiFeedback =
-                evaluation?.feedback;
-
-              return (
-                <div
-                  key={index}
-                  style={{
-                    backgroundColor:
-                      "#0f172a",
-                    padding: "22px",
-                    borderRadius: "12px",
-                    marginBottom: "15px",
-                    border:
-                      "1px solid #334155"
-                  }}
-                >
-                  {/* Question number and question text */}
-                  <h3
-                    style={{
-                      margin: "0 0 12px",
-                      fontSize: "18px",
-                      lineHeight: "1.5"
-                    }}
-                  >
-                    Q{index + 1}.{" "}
-                    {question}
-                  </h3>
-
-                  {/* User's answer */}
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#cbd5e1",
-                      lineHeight: "1.6"
-                    }}
-                  >
-                    <strong>
-                      Answer:
-                    </strong>{" "}
-                    {interview.answers &&
-                    interview.answers[index]
-                      ? interview.answers[
-                          index
-                        ]
-                      : "No answer provided."}
-                  </p>
-
-                  {/* AI evaluation for this question */}
-                  {evaluation && (
-                    <div
-                      style={{
-                        marginTop: "18px",
-                        padding: "16px",
-                        backgroundColor:
-                          aiScore >= 7
-                            ? "#14532d"
-                            : aiScore >= 4
-                            ? "#713f12"
-                            : "#7f1d1d",
-                        borderRadius: "10px",
-                        border:
-                          "1px solid #475569"
-                      }}
-                    >
-                      <p
-                        style={{
-                          margin:
-                            "0 0 8px",
-                          fontWeight: "700",
-                          fontSize: "16px"
-                        }}
-                      >
-                        🤖 AI Score:{" "}
-                        {aiScore} / 10
-                      </p>
-
-                      <p
-                        style={{
-                          margin: 0,
-                          color: "#f8fafc",
-                          lineHeight: "1.6"
-                        }}
-                      >
-                        <strong>
-                          AI Feedback:
-                        </strong>{" "}
-                        {aiFeedback ||
-                          "No feedback available."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-          )
-        ) : (
-          // Show this when old interview records have no questions
-          <div
-            style={{
-              backgroundColor: "#0f172a",
-              padding: "20px",
-              borderRadius: "12px",
-              color: "#cbd5e1"
-            }}
-          >
-            No questions and answers
-            available for this interview.
-          </div>
+            <span className="details-ai-badge">AI ANALYZED</span>
+          </section>
         )}
 
-        {/* Back to Profile button */}
-        <button
-          onClick={() => navigate("/profile")}
-          style={{
-            marginTop: "15px",
-            padding: "12px 22px",
-            backgroundColor: "#4f46e5",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "15px",
-            fontWeight: "600"
-          }}
-        >
-          Back to Profile
-        </button>
+        {/* Question-by-question review */}
+        <section className="details-questions-section">
+          <div className="details-section-heading">
+            <div>
+              <span className="details-card-label">DETAILED REVIEW</span>
+              <h2>Questions & Answers</h2>
+              <p>Examine each response and the feedback it received.</p>
+            </div>
+
+            <span className="details-question-count">
+              {questions.length} QUESTIONS
+            </span>
+          </div>
+
+          {questions.length === 0 ? (
+            <div className="details-empty-state">
+              <div className="details-empty-icon">◇</div>
+              <h3>No question data available</h3>
+              <p>
+                This interview record does not contain saved questions.
+                This can happen with older interview attempts.
+              </p>
+            </div>
+          ) : (
+            <div className="details-question-list">
+              {questions.map((question, index) => {
+                const evaluation = evaluations[index];
+                const rawScore = Number(evaluation?.score);
+                const hasScore =
+                  evaluation?.score !== undefined &&
+                  evaluation?.score !== null &&
+                  evaluation?.score !== "" &&
+                  Number.isFinite(rawScore);
+
+                const answer = answers[index];
+                const answerText =
+                  typeof answer === "string" && answer.trim()
+                    ? answer
+                    : "No answer provided.";
+
+                const scoreClass = !hasScore
+                  ? "details-score-neutral"
+                  : rawScore >= 7
+                  ? "details-score-good"
+                  : rawScore >= 4
+                  ? "details-score-medium"
+                  : "details-score-low";
+
+                return (
+                  <article
+                    className="details-question-card"
+                    key={`${index}-${String(question).slice(0, 30)}`}
+                  >
+                    <div className="details-question-top">
+                      <span className="details-question-number">
+                        Q{index + 1}
+                      </span>
+
+                      {hasScore && (
+                        <span
+                          className={`details-question-score ${scoreClass}`}
+                        >
+                          AI Score: {rawScore} / 10
+                        </span>
+                      )}
+                    </div>
+
+                    <h3>{question}</h3>
+
+                    <div className="details-answer-block">
+                      <span className="details-answer-label">
+                        YOUR ANSWER
+                      </span>
+                      <p>{answerText}</p>
+                    </div>
+
+                    {evaluation ? (
+                      <div
+                        className={`details-feedback-block ${scoreClass}`}
+                      >
+                        <div className="details-feedback-heading">
+                          <span>✧ AI FEEDBACK</span>
+                          {hasScore && (
+                            <strong>{rawScore} / 10</strong>
+                          )}
+                        </div>
+
+                        <p>
+                          {evaluation.feedback ||
+                            "No feedback available for this answer."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="details-no-feedback">
+                        No AI evaluation was saved for this question.
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Return navigation */}
+        <footer className="details-footer">
+          <p>
+            Review your feedback and use it to prepare for your next attempt.
+          </p>
+
+          <div className="details-footer-actions">
+            <button
+              className="details-secondary-btn"
+              onClick={() => navigate("/")}
+            >
+              Back to Home
+            </button>
+
+            <button
+              className="details-primary-btn"
+              onClick={() => navigate("/profile")}
+            >
+              ← Back to Profile
+            </button>
+          </div>
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }
 
