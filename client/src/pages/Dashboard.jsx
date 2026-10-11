@@ -1,36 +1,34 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
-  // Used to navigate between pages
   const navigate = useNavigate();
 
-  // Store dashboard statistics
+  // Store dashboard statistics and recent interview history.
   const [stats, setStats] = useState(null);
-
-  // Store recent interview history
   const [interviews, setInterviews] = useState([]);
-
-  // Track loading state
   const [loading, setLoading] = useState(true);
-
-  // Store error message
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Get logged-in user from localStorage
-    const user = JSON.parse(localStorage.getItem("user"));
+    // Check whether a user is logged in.
+    let user;
 
-    // If user is not logged in, go to Login page
+    try {
+      user = JSON.parse(localStorage.getItem("user"));
+    } catch {
+      user = null;
+    }
+
     if (!user?.id) {
       navigate("/login");
       return;
     }
 
-    // Load dashboard data
+    // Fetch statistics and interview history from the backend.
     const loadDashboard = async () => {
       try {
-        // Fetch overall interview statistics
         const statsResponse = await fetch(
           `http://localhost:5000/api/interviews/stats/${user.id}`
         );
@@ -43,10 +41,8 @@ function Dashboard() {
           );
         }
 
-        // Save statistics
         setStats(statsData);
 
-        // Fetch user's interview history
         const interviewResponse = await fetch(
           `http://localhost:5000/api/interviews/${user.id}`
         );
@@ -55,755 +51,354 @@ function Dashboard() {
 
         if (!interviewResponse.ok) {
           throw new Error(
-            interviewData.message ||
-              "Failed to load interview history."
+            interviewData.message || "Failed to load interview history."
           );
         }
 
-        // Keep only the latest 5 interviews
-        setInterviews(interviewData.slice(0, 5));
-      } catch (error) {
-        // Display error in browser console
-        console.error("Dashboard error:", error);
-
-        // Show error message
-        setError(
-          error.message || "Failed to load dashboard."
+        // Display only the five most recent attempts.
+        setInterviews(
+          Array.isArray(interviewData)
+            ? interviewData.slice(0, 5)
+            : []
         );
+      } catch (err) {
+        console.error("Dashboard error:", err);
+        setError(err.message || "Failed to load dashboard.");
       } finally {
-        // Stop loading
         setLoading(false);
       }
     };
 
-    // Start loading dashboard data
     loadDashboard();
   }, [navigate]);
 
-  // ------------------------------------------
-  // Loading Screen
-  // ------------------------------------------
-
+  // Show a loading screen while the API requests are running.
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#0f172a",
-          color: "#ffffff",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          fontSize: "20px"
-        }}
-      >
-        Loading Dashboard...
-      </div>
+      <main className="dashboard-state">
+        <div className="dashboard-loader" />
+        <p>Initializing your AI dashboard...</p>
+        <span>Loading your interview performance</span>
+      </main>
     );
   }
 
-  // ------------------------------------------
-  // Error Screen
-  // ------------------------------------------
-
+  // Show an error screen if the backend request fails.
   if (error) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#0f172a",
-          color: "#ffffff",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexDirection: "column",
-          gap: "20px",
-          padding: "20px",
-          textAlign: "center"
-        }}
-      >
-        <h2>{error}</h2>
-
+      <main className="dashboard-state">
+        <div className="dashboard-state-icon">!</div>
+        <h2>Unable to load dashboard</h2>
+        <p>{error}</p>
         <button
+          className="dashboard-primary-btn"
           onClick={() => navigate("/")}
-          style={{
-            padding: "12px 22px",
-            backgroundColor: "#4f46e5",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "600"
-          }}
         >
           Back to Home
         </button>
-      </div>
+      </main>
     );
   }
 
+  // Provide safe defaults if the statistics response is empty.
+  const totalInterviews = Number(stats?.total_interviews) || 0;
+  const averageScore = Number(stats?.average_score) || 0;
+  const bestScore = Number(stats?.best_score) || 0;
+  const totalQuestions = Number(stats?.total_questions) || 0;
+
+  // Average score is measured against the existing five-point scale.
+  const progress = Math.min(
+    Math.max((averageScore / 5) * 100, 0),
+    100
+  );
+
+  // Reusable statistics card data.
+  const statCards = [
+    {
+      icon: "◉",
+      label: "Total Interviews",
+      value: totalInterviews,
+      suffix: "",
+      accent: "violet",
+    },
+    {
+      icon: "↗",
+      label: "Average Score",
+      value: averageScore.toFixed(2),
+      suffix: " / 5",
+      accent: "cyan",
+    },
+    {
+      icon: "★",
+      label: "Best Score",
+      value: bestScore.toFixed(2),
+      suffix: " / 5",
+      accent: "amber",
+    },
+    {
+      icon: "▤",
+      label: "Questions Attempted",
+      value: totalQuestions,
+      suffix: "",
+      accent: "green",
+    },
+  ];
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#0f172a",
-        color: "#ffffff",
-        padding: "50px 20px",
-        boxSizing: "border-box"
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "1050px",
-          margin: "0 auto"
-        }}
-      >
-
-        {/* ======================================
-            DASHBOARD HEADER
-        ====================================== */}
-
-        <div
-          style={{
-            marginBottom: "35px"
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 8px",
-              color: "#818cf8",
-              fontSize: "14px",
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: "1px"
-            }}
-          >
-            AI Interview Dashboard
-          </p>
-
-          <h1
-            style={{
-              margin: "0 0 10px",
-              fontSize: "38px",
-              fontWeight: "800",
-              color: "#ffffff"
-            }}
-          >
-            Interview Performance
-          </h1>
-
-          <p
-            style={{
-              margin: 0,
-              color: "#cbd5e1",
-              fontSize: "16px",
-              lineHeight: "1.6"
-            }}
-          >
-            Track your overall mock interview performance
-            and review your recent attempts.
-          </p>
-        </div>
-
-
-        {/* ======================================
-            STATISTICS CARDS
-        ====================================== */}
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "18px",
-            marginBottom: "30px"
-          }}
-        >
-
-          {/* Total Interviews */}
-          <div
-            style={{
-              backgroundColor: "#172554",
-              padding: "24px",
-              borderRadius: "15px",
-              border: "1px solid #3730a3",
-              boxShadow: "0 8px 25px rgba(0,0,0,0.20)"
-            }}
-          >
-            <div
-              style={{
-                fontSize: "28px",
-                marginBottom: "12px"
-              }}
-            >
-              🎤
+    <main className="dashboard-page">
+      <div className="dashboard-container">
+        {/* Dashboard heading and primary action */}
+        <header className="dashboard-header">
+          <div className="dashboard-heading">
+            <div className="dashboard-eyebrow">
+              <span className="dashboard-status-dot" />
+              AI PERFORMANCE CENTER
             </div>
 
-            <p
-              style={{
-                margin: "0 0 8px",
-                color: "#a5b4fc",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}
-            >
-              Total Interviews
-            </p>
+            <h1>
+              Your Interview
+              <span> Dashboard</span>
+            </h1>
 
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "32px",
-                color: "#ffffff"
-              }}
-            >
-              {stats.total_interviews}
-            </h2>
+            <p>
+              Track your progress, analyze your performance, and prepare
+              for your next career opportunity.
+            </p>
           </div>
 
-
-          {/* Average Score */}
-          <div
-            style={{
-              backgroundColor: "#172554",
-              padding: "24px",
-              borderRadius: "15px",
-              border: "1px solid #3730a3",
-              boxShadow: "0 8px 25px rgba(0,0,0,0.20)"
-            }}
+          <button
+            className="dashboard-primary-btn dashboard-header-btn"
+            onClick={() => navigate("/interview-setup")}
           >
-            <div
-              style={{
-                fontSize: "28px",
-                marginBottom: "12px"
-              }}
+            <span>＋</span> Start Interview
+          </button>
+        </header>
+
+        {/* Performance overview cards */}
+        <section className="dashboard-stats-grid">
+          {statCards.map((card) => (
+            <article
+              className={`dashboard-stat-card dashboard-${card.accent}`}
+              key={card.label}
             >
-              📊
-            </div>
+              <div className="dashboard-stat-top">
+                <span className="dashboard-stat-label">
+                  {card.label}
+                </span>
+                <span className="dashboard-stat-icon">
+                  {card.icon}
+                </span>
+              </div>
 
-            <p
-              style={{
-                margin: "0 0 8px",
-                color: "#a5b4fc",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}
-            >
-              Average Score
-            </p>
+              <div className="dashboard-stat-value">
+                {card.value}
+                <span>{card.suffix}</span>
+              </div>
 
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "32px",
-                color: "#ffffff"
-              }}
-            >
-              {stats.average_score} / 5
-            </h2>
-          </div>
+              <div className="dashboard-stat-footer">
+                <span className="dashboard-stat-indicator" />
+                Your performance overview
+              </div>
+            </article>
+          ))}
+        </section>
 
-
-          {/* Best Score */}
-          <div
-            style={{
-              backgroundColor: "#172554",
-              padding: "24px",
-              borderRadius: "15px",
-              border: "1px solid #3730a3",
-              boxShadow: "0 8px 25px rgba(0,0,0,0.20)"
-            }}
-          >
-            <div
-              style={{
-                fontSize: "28px",
-                marginBottom: "12px"
-              }}
-            >
-              🏆
-            </div>
-
-            <p
-              style={{
-                margin: "0 0 8px",
-                color: "#a5b4fc",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}
-            >
-              Best Score
-            </p>
-
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "32px",
-                color: "#ffffff"
-              }}
-            >
-              {stats.best_score} / 5
-            </h2>
-          </div>
-
-
-          {/* Questions Attempted */}
-          <div
-            style={{
-              backgroundColor: "#172554",
-              padding: "24px",
-              borderRadius: "15px",
-              border: "1px solid #3730a3",
-              boxShadow: "0 8px 25px rgba(0,0,0,0.20)"
-            }}
-          >
-            <div
-              style={{
-                fontSize: "28px",
-                marginBottom: "12px"
-              }}
-            >
-              📝
-            </div>
-
-            <p
-              style={{
-                margin: "0 0 8px",
-                color: "#a5b4fc",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}
-            >
-              Questions Attempted
-            </p>
-
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "32px",
-                color: "#ffffff"
-              }}
-            >
-              {stats.total_questions}
-            </h2>
-          </div>
-
-        </div>
-
-
-        {/* ======================================
-            RECENT INTERVIEWS
-        ====================================== */}
-
-        <div
-          style={{
-            backgroundColor: "#172554",
-            padding: "28px",
-            borderRadius: "16px",
-            border: "1px solid #3730a3",
-            marginBottom: "25px",
-            boxShadow: "0 8px 25px rgba(0,0,0,0.20)"
-          }}
-        >
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "15px",
-              flexWrap: "wrap",
-              marginBottom: "22px"
-            }}
-          >
+        {/* Recent interview attempts */}
+        <section className="dashboard-panel">
+          <div className="dashboard-panel-header">
             <div>
-              <h2
-                style={{
-                  margin: "0 0 6px",
-                  fontSize: "24px",
-                  color: "#ffffff"
-                }}
-              >
-                Recent Interviews
-              </h2>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "#94a3b8",
-                  fontSize: "14px"
-                }}
-              >
-                Your latest interview attempts
-              </p>
+              <div className="dashboard-section-eyebrow">
+                ACTIVITY
+              </div>
+              <h2>Recent Interviews</h2>
+              <p>Your five latest interview attempts</p>
             </div>
 
-            {/* Open complete profile history */}
             <button
+              className="dashboard-secondary-btn"
               onClick={() => navigate("/profile")}
-              style={{
-                padding: "9px 16px",
-                backgroundColor: "#334155",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "600"
-              }}
             >
-              View All
+              View All <span>→</span>
             </button>
           </div>
 
-
-          {/* Show message if there are no interviews */}
           {interviews.length === 0 ? (
-            <div
-              style={{
-                padding: "25px",
-                backgroundColor: "#0f172a",
-                borderRadius: "12px",
-                border: "1px solid #334155",
-                textAlign: "center"
-              }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  color: "#cbd5e1"
-                }}
-              >
-                No interview history found.
+            <div className="dashboard-empty">
+              <div className="dashboard-empty-icon">◉</div>
+              <h3>Your journey starts here</h3>
+              <p>
+                You have no interview attempts yet. Start a mock interview
+                to see your results and progress here.
               </p>
+              <button
+                className="dashboard-primary-btn"
+                onClick={() => navigate("/interview-setup")}
+              >
+                Start Your First Interview →
+              </button>
             </div>
           ) : (
+            <div className="dashboard-interview-list">
+              {interviews.map((interview) => {
+                const score = Number(interview.score) || 0;
+                const questionCount =
+                  Number(interview.total_questions) || 0;
 
-            interviews.map((interview) => (
-              <div
-                key={interview.id}
-                style={{
-                  backgroundColor: "#0f172a",
-                  padding: "20px",
-                  borderRadius: "12px",
-                  border: "1px solid #334155",
-                  marginBottom: "12px"
-                }}
-              >
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "20px",
-                    flexWrap: "wrap"
-                  }}
-                >
-
-                  {/* Interview information */}
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: "240px"
-                    }}
+                return (
+                  <article
+                    className="dashboard-interview-item"
+                    key={interview.id}
                   >
-
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        flexWrap: "wrap",
-                        marginBottom: "8px"
-                      }}
-                    >
-
-                      {/* Role */}
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontSize: "18px",
-                          color: "#ffffff"
-                        }}
-                      >
-                        {interview.role}
-                      </h3>
-
-                      {/* Attempt badge */}
-                      <span
-                        style={{
-                          backgroundColor: "#312e81",
-                          color: "#c7d2fe",
-                          padding: "4px 9px",
-                          borderRadius: "20px",
-                          fontSize: "12px",
-                          fontWeight: "600"
-                        }}
-                      >
-                        Attempt {interview.attempt_number || 1}
-                      </span>
-
+                    <div className="dashboard-interview-symbol">
+                      <span>AI</span>
                     </div>
 
+                    <div className="dashboard-interview-info">
+                      <div className="dashboard-interview-title-row">
+                        <h3>{interview.role || "Mock Interview"}</h3>
+                        <span className="dashboard-attempt-badge">
+                          Attempt {interview.attempt_number || 1}
+                        </span>
+                      </div>
 
-                    {/* Interview details row */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "18px",
-                        flexWrap: "wrap"
-                      }}
-                    >
+                      <div className="dashboard-interview-meta">
+                        <span>
+                          <span className="dashboard-meta-label">
+                            SCORE
+                          </span>
+                          <strong>
+                            {score} / {questionCount}
+                          </strong>
+                        </span>
 
-                      <span
-                        style={{
-                          color: "#cbd5e1",
-                          fontSize: "14px"
-                        }}
-                      >
-                        Score:{" "}
-                        <strong style={{ color: "#ffffff" }}>
-                          {interview.score} /{" "}
-                          {interview.total_questions}
-                        </strong>
-                      </span>
-
-                      <span
-                        style={{
-                          color: "#94a3b8",
-                          fontSize: "14px"
-                        }}
-                      >
-                        {new Date(
-                          interview.created_at
-                        ).toLocaleString()}
-                      </span>
-
+                        <span>
+                          {interview.created_at
+                            ? new Date(
+                                interview.created_at
+                              ).toLocaleString()
+                            : "Date unavailable"}
+                        </span>
+                      </div>
                     </div>
 
-                  </div>
-
-
-                  {/* View Details button */}
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/interview-details/${interview.id}`
-                      )
-                    }
-                    style={{
-                      padding: "10px 18px",
-                      backgroundColor: "#4f46e5",
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "600"
-                    }}
-                  >
-                    View Details →
-                  </button>
-
-                </div>
-
-              </div>
-            ))
-
+                    <button
+                      className="dashboard-details-btn"
+                      onClick={() =>
+                        navigate(
+                          `/interview-details/${interview.id}`
+                        )
+                      }
+                    >
+                      Details <span>↗</span>
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
           )}
+        </section>
 
-        </div>
+        {/* Progress panel */}
+        <section className="dashboard-progress-panel">
+          <div className="dashboard-progress-content">
+            <div className="dashboard-section-eyebrow">
+              YOUR JOURNEY
+            </div>
+            <h2>Progress Overview</h2>
+            <p>
+              You have completed{" "}
+              <strong>{totalInterviews}</strong>{" "}
+              {totalInterviews === 1
+                ? "mock interview"
+                : "mock interviews"}.
+              Keep practicing to strengthen your interview skills.
+            </p>
 
+            <div className="dashboard-progress-track">
+              <div className="dashboard-progress-labels">
+                <span>Average score progress</span>
+                <strong>{Math.round(progress)}%</strong>
+              </div>
 
-        {/* ======================================
-            PROGRESS INFORMATION
-        ====================================== */}
+              <div
+                className="dashboard-progress-bar"
+                role="progressbar"
+                aria-label="Average score progress"
+                aria-valuenow={Math.round(progress)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="dashboard-progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
 
-        <div
-          style={{
-            backgroundColor: "#172554",
-            padding: "28px",
-            borderRadius: "16px",
-            border: "1px solid #3730a3",
-            marginBottom: "25px",
-            boxShadow: "0 8px 25px rgba(0,0,0,0.20)"
-          }}
-        >
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "12px"
-            }}
-          >
-
-            <span
-              style={{
-                fontSize: "24px"
-              }}
-            >
-              📈
-            </span>
-
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "22px",
-                color: "#ffffff"
-              }}
-            >
-              Your Progress
-            </h2>
-
+              <div className="dashboard-progress-scale">
+                <span>0</span>
+                <span>Target score: 5 / 5</span>
+              </div>
+            </div>
           </div>
 
-          <p
-            style={{
-              margin: 0,
-              color: "#cbd5e1",
-              lineHeight: "1.7",
-              fontSize: "15px"
-            }}
+          <div
+            className="dashboard-progress-ring"
+            style={{ "--dashboard-progress": `${progress}%` }}
           >
-            You have completed{" "}
-            <strong style={{ color: "#ffffff" }}>
-              {stats.total_interviews}
-            </strong>{" "}
-            mock interview
-            {stats.total_interviews !== 1 ? "s" : ""}.
-            Keep practicing to improve your interview
-            performance.
-          </p>
+            <div className="dashboard-progress-ring-inner">
+              <strong>{Math.round(progress)}%</strong>
+              <span>AVERAGE</span>
+            </div>
+          </div>
+        </section>
 
-          {/* Average score progress bar */}
-<div
-  style={{
-    marginTop: "22px"
-  }}
->
-  {/* Progress bar heading */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginBottom: "8px",
-      color: "#cbd5e1",
-      fontSize: "14px",
-      fontWeight: "600"
-    }}
-  >
-    <span>Average Score Progress</span>
-
-    <span>
-      {Math.round(
-        (stats.average_score / 5) * 100
-      )}
-      %
-    </span>
-  </div>
-
-  {/* Progress bar background */}
-  <div
-    style={{
-      width: "100%",
-      height: "10px",
-      backgroundColor: "#0f172a",
-      borderRadius: "10px",
-      overflow: "hidden",
-      border: "1px solid #334155"
-    }}
-  >
-    {/* Actual progress */}
-    <div
-      style={{
-        width: `${Math.min(
-          (stats.average_score / 5) * 100,
-          100
-        )}%`,
-        height: "100%",
-        backgroundColor: "#4f46e5",
-        borderRadius: "10px",
-        transition: "width 0.5s ease"
-      }}
-    />
-  </div>
-</div>
-
-        </div>
-
-
-        {/* ======================================
-            NAVIGATION BUTTONS
-        ====================================== */}
-
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            flexWrap: "wrap"
-          }}
-        >
-
-          {/* Start another interview */}
+        {/* Quick navigation */}
+        <section className="dashboard-quick-actions">
           <button
+            className="dashboard-quick-action"
             onClick={() => navigate("/interview-setup")}
-            style={{
-              padding: "12px 22px",
-              backgroundColor: "#4f46e5",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
           >
-            Start Interview →
+            <span className="dashboard-quick-icon">＋</span>
+            <span>
+              <strong>Practice Again</strong>
+              <small>Start a new mock interview</small>
+            </span>
+            <span className="dashboard-quick-arrow">→</span>
           </button>
 
-
-          {/* Go to profile */}
           <button
+            className="dashboard-quick-action"
             onClick={() => navigate("/profile")}
-            style={{
-              padding: "12px 22px",
-              backgroundColor: "#334155",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
           >
-            My Profile
+            <span className="dashboard-quick-icon">◎</span>
+            <span>
+              <strong>My Profile</strong>
+              <small>Explore your interview history</small>
+            </span>
+            <span className="dashboard-quick-arrow">→</span>
           </button>
 
-
-          {/* Go back home */}
           <button
+            className="dashboard-quick-action"
             onClick={() => navigate("/")}
-            style={{
-              padding: "12px 22px",
-              backgroundColor: "#334155",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "15px",
-              fontWeight: "600"
-            }}
           >
-            Home
+            <span className="dashboard-quick-icon">⌂</span>
+            <span>
+              <strong>Home</strong>
+              <small>Return to the home page</small>
+            </span>
+            <span className="dashboard-quick-arrow">→</span>
           </button>
+        </section>
 
-        </div>
-
+        <footer className="dashboard-footer">
+          <span className="dashboard-footer-dot" />
+          AI MOCK INTERVIEW SYSTEM
+          <span>·</span>
+          YOUR NEXT OPPORTUNITY STARTS WITH PRACTICE
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }
 
