@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -5,527 +6,249 @@ function Result() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ==========================================
-  // LOGIN CHECK
-  // ==========================================
-
-  const user = JSON.parse(
-    localStorage.getItem("user")
-  );
-
+  // Check whether the user is logged in.
+  const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
-  // Logged-out user ko Login page par bhejna
   useEffect(() => {
     if (!userId) {
-      navigate("/login", {
-        replace: true
-      });
+      navigate("/login", { replace: true });
     }
   }, [userId, navigate]);
 
-  // Logged-in user nahi hai to page render nahi karna
-  if (!userId) {
-    return null;
-  }
+  // Do not render the result page for logged-out users.
+  if (!userId) return null;
 
-  // ==========================================
-  // RESULT DATA
-  // Interview.jsx se received data
-  // ==========================================
-
+  // Read interview results passed by Interview.jsx.
   const {
     score,
     answers,
     questions,
-
-    // Gemini AI evaluation data
     evaluations,
     totalAIScore,
-    maxAIScore
+    maxAIScore,
   } = location.state || {};
 
-  // ==========================================
-  // BASIC INFORMATION
-  // ==========================================
-
-  const totalQuestions =
-    questions?.length || 0;
+  const totalQuestions = questions?.length || 0;
 
   const answeredQuestions =
-    answers?.filter(
-      (answer) =>
-        answer.trim() !== ""
-    ).length || 0;
+    answers?.filter((answer) => answer.trim() !== "").length || 0;
 
-  // ==========================================
-  // AI SCORE
-  // ==========================================
-  //
-  // Example:
-  // 10 questions
-  // AI total = 72 / 100
-  //
-  // Percentage = 72%
-  // ==========================================
-
+  // Prefer the detailed AI score when it is available.
   const hasAIScore =
-    typeof totalAIScore ===
-      "number" &&
-    typeof maxAIScore ===
-      "number" &&
+    typeof totalAIScore === "number" &&
+    typeof maxAIScore === "number" &&
     maxAIScore > 0;
 
   const percentage = hasAIScore
-    ? Math.round(
-        (totalAIScore /
-          maxAIScore) *
-          100
-      )
+    ? Math.max(0, Math.min(100, Math.round((totalAIScore / maxAIScore) * 100)))
     : totalQuestions
-    ? Math.round(
-        (score /
-          totalQuestions) *
-          100
-      )
-    : 0;
+      ? Math.max(0, Math.min(100, Math.round(((score || 0) / totalQuestions) * 100)))
+      : 0;
 
-  // ==========================================
-  // PERFORMANCE LEVEL
-  // ==========================================
+  // Determine the performance category.
+  let performanceLevel = "Needs Improvement";
 
-  let performanceLevel = "";
+  if (percentage >= 80) performanceLevel = "Excellent";
+  else if (percentage >= 60) performanceLevel = "Good";
+  else if (percentage >= 40) performanceLevel = "Average";
 
-  if (percentage >= 80) {
-    performanceLevel = "Excellent";
-  } else if (percentage >= 60) {
-    performanceLevel = "Good";
-  } else if (percentage >= 40) {
-    performanceLevel = "Average";
-  } else {
-    performanceLevel =
-      "Needs Improvement";
-  }
-
-  // ==========================================
-  // GENERAL FEEDBACK
-  // ==========================================
-
-  let feedback = "";
+  // Provide an overall summary based on the final percentage.
+  let feedback = "Keep practicing and work on improving your interview answers.";
 
   if (percentage >= 80) {
-    feedback =
-      "Excellent performance! Your answers show strong understanding.";
+    feedback = "Excellent performance! Your answers show strong understanding.";
   } else if (percentage >= 60) {
-    feedback =
-      "Good performance! Keep practicing to improve further.";
+    feedback = "Good performance! Keep practicing to improve further.";
   } else if (percentage >= 40) {
     feedback =
-      "Average performance. Focus on improving the accuracy and completeness of your answers.";
-  } else {
-    feedback =
-      "Keep practicing and work on improving your interview answers.";
+      "Average performance. Focus on accuracy and completeness in your answers.";
   }
 
-  // ==========================================
-  // SAFE AI SCORE FORMATTER
-  // ==========================================
-
-  const getAIScore =
-    (index) => {
-      if (
-        !evaluations ||
-        !evaluations[index]
-      ) {
-        return null;
-      }
-
-      return evaluations[index]
-        .score;
-    };
-
-  // ==========================================
-  // SAFE AI FEEDBACK FORMATTER
-  // ==========================================
-
-  const getAIFeedback =
-    (index) => {
-      if (
-        !evaluations ||
-        !evaluations[index]
-      ) {
-        return null;
-      }
-
-      return evaluations[index]
-        .feedback;
-    };
-
-  // ==========================================
-  // RESULT UI
-  // ==========================================
+  // Safely retrieve per-question AI evaluation details.
+  const getAIScore = (index) => evaluations?.[index]?.score ?? null;
+  const getAIFeedback = (index) => evaluations?.[index]?.feedback ?? null;
 
   return (
-    <div
-      style={{
-        maxWidth: "800px",
-        margin: "40px auto",
-        padding: "30px",
-        fontFamily: "Arial",
-        color: "#222",
-        backgroundColor: "#ffffff",
-        minHeight: "100vh",
-        boxSizing: "border-box"
-      }}
-    >
-      {/* ==========================================
-          PAGE HEADING
-          ========================================== */}
+    <main className="result-page">
+      <div className="result-shell">
+        {/* Dashboard heading */}
+        <header className="result-header">
+          <div className="result-eyebrow">
+            <span className="result-live-dot" />
+            AI INTERVIEW ANALYTICS
+          </div>
 
-      <h1
-        style={{
-          textAlign: "center"
-        }}
-      >
-        Interview Result
-      </h1>
+          <h1>
+            Interview <span>Results</span>
+          </h1>
 
-      {/* ==========================================
-          OVERALL RESULT CARD
-          ========================================== */}
+          <p>Your performance report is ready. Review your results and improve your next attempt.</p>
+        </header>
 
-      <div
-        style={{
-          textAlign: "center",
-          padding: "25px",
-          backgroundColor:
-            "#f5f5f5",
-          borderRadius: "12px",
-          marginTop: "25px"
-        }}
-      >
-        {/* AI SCORE */}
-        {hasAIScore ? (
-          <>
-            <h2>
-              AI Score:{" "}
-              {totalAIScore} /{" "}
-              {maxAIScore}
-            </h2>
+        {/* Main score dashboard */}
+        <section className="result-overview">
+          <div className="result-score-panel">
+            <div className="result-score-ring" style={{ "--score": `${percentage}%` }}>
+              <div className="result-score-inner">
+                <strong>{percentage}%</strong>
+                <span>Overall Score</span>
+              </div>
+            </div>
 
-            <h3>
-              Percentage:{" "}
-              {percentage}%
-            </h3>
-          </>
-        ) : (
-          <>
-            <h2>
-              Your Score:{" "}
-              {score} /{" "}
-              {totalQuestions}
-            </h2>
+            <div className="result-performance-label">{performanceLevel}</div>
+            <p className="result-summary">{feedback}</p>
+          </div>
 
-            <h3>
-              Percentage:{" "}
-              {percentage}%
-            </h3>
-          </>
+          <div className="result-stats">
+            <div className="result-stat-card">
+              <span className="result-stat-icon">◎</span>
+              <span className="result-stat-label">Questions</span>
+              <strong>{totalQuestions}</strong>
+              <small>Total interview questions</small>
+            </div>
+
+            <div className="result-stat-card">
+              <span className="result-stat-icon">✓</span>
+              <span className="result-stat-label">Answered</span>
+              <strong>{answeredQuestions}<span className="result-stat-total"> / {totalQuestions}</span></strong>
+              <small>Questions attempted</small>
+            </div>
+
+            <div className="result-stat-card result-stat-wide">
+              <span className="result-stat-icon">✧</span>
+              <span className="result-stat-label">
+                {hasAIScore ? "Gemini AI Score" : "Interview Score"}
+              </span>
+              <strong>
+                {hasAIScore
+                  ? `${totalAIScore} / ${maxAIScore}`
+                  : `${score ?? 0} / ${totalQuestions}`}
+              </strong>
+              <div className="result-progress-track">
+                <div
+                  className="result-progress-fill"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Explain how the AI evaluated answers */}
+        {hasAIScore && (
+          <section className="result-ai-info">
+            <div className="result-ai-icon">✧</div>
+            <div>
+              <h2>AI Evaluation Report</h2>
+              <p>
+                Gemini AI evaluated your answers for correctness, relevance,
+                completeness, technical understanding and clarity.
+              </p>
+            </div>
+            <span className="result-ai-badge">AI ANALYZED</span>
+          </section>
         )}
 
-        {/* ==========================================
-            PROGRESS BAR
-            ========================================== */}
-
-        <div
-          style={{
-            width: "100%",
-            height: "12px",
-            backgroundColor:
-              "#ddd",
-            borderRadius: "6px",
-            marginTop: "10px",
-            overflow: "hidden"
-          }}
-        >
-          <div
-            style={{
-              width: `${percentage}%`,
-              height: "100%",
-              backgroundColor:
-                "#4f46e5",
-              borderRadius: "6px"
-            }}
-          ></div>
-        </div>
-
-        {/* PERFORMANCE */}
-        <h3>
-          Performance:{" "}
-          {performanceLevel}
-        </h3>
-
-        {/* TOTAL QUESTIONS */}
-        <p>
-          Total Questions:{" "}
-          {totalQuestions}
-        </p>
-
-        {/* ANSWERED QUESTIONS */}
-        <p>
-          Answered Questions:{" "}
-          {answeredQuestions}
-        </p>
-
-        {/* GENERAL FEEDBACK */}
-        <p
-          style={{
-            fontSize: "18px",
-            fontWeight: "600"
-          }}
-        >
-          {feedback}
-        </p>
-      </div>
-
-      {/* ==========================================
-          AI EVALUATION INFORMATION
-          ========================================== */}
-
-      {hasAIScore && (
-        <div
-          style={{
-            marginTop: "25px",
-            padding: "20px",
-            backgroundColor:
-              "#eef2ff",
-            borderRadius: "12px",
-            border:
-              "1px solid #c7d2fe"
-          }}
-        >
-          <h2
-            style={{
-              marginTop: 0
-            }}
-          >
-            🤖 AI Evaluation
-          </h2>
-
-          <p
-            style={{
-              marginBottom: 0,
-              lineHeight: "1.6"
-            }}
-          >
-            Gemini AI evaluated your
-            answers based on
-            correctness, relevance,
-            completeness, technical
-            understanding and clarity.
-          </p>
-        </div>
-      )}
-
-      {/* ==========================================
-          ANSWERS SECTION
-          ========================================== */}
-
-      <h2
-        style={{
-          marginTop: "30px"
-        }}
-      >
-        Your Answers
-      </h2>
-
-      {answers?.map(
-        (answer, index) => {
-          const aiScore =
-            getAIScore(index);
-
-          const aiFeedback =
-            getAIFeedback(index);
-
-          const isSkipped =
-            answer.trim() === "";
-
-          return (
-            <div
-              key={index}
-              style={{
-                padding: "20px",
-                marginBottom:
-                  "20px",
-                backgroundColor:
-                  "#f5f5f5",
-                borderRadius:
-                  "10px",
-                border:
-                  "1px solid #ddd"
-              }}
-            >
-              {/* QUESTION NUMBER */}
-              <p
-                style={{
-                  fontWeight: "700",
-                  fontSize: "18px",
-                  marginBottom:
-                    "10px"
-                }}
-              >
-                Question{" "}
-                {index + 1}
-              </p>
-
-              {/* QUESTION */}
-              <p
-                style={{
-                  fontWeight: "600",
-                  marginBottom:
-                    "12px",
-                  lineHeight:
-                    "1.5"
-                }}
-              >
-                {
-                  questions?.[
-                    index
-                  ]
-                }
-              </p>
-
-              {/* USER ANSWER */}
-              <p
-                style={{
-                  color: "#555",
-                  lineHeight:
-                    "1.6",
-                  marginBottom:
-                    "15px"
-                }}
-              >
-                <strong>
-                  Your Answer:
-                </strong>{" "}
-                {isSkipped
-                  ? "Not answered (Skipped)"
-                  : answer}
-              </p>
-
-              {/* ==========================================
-                  AI SCORE
-                  ========================================== */}
-
-              {aiScore !== null && (
-                <div
-                  style={{
-                    marginTop:
-                      "15px",
-                    padding: "15px",
-                    backgroundColor:
-                      aiScore >= 7
-                        ? "#dcfce7"
-                        : aiScore >= 4
-                        ? "#fef9c3"
-                        : "#fee2e2",
-                    borderRadius:
-                      "8px",
-                    border:
-                      "1px solid #ddd"
-                  }}
-                >
-                  <p
-                    style={{
-                      margin:
-                        "0 0 8px",
-                      fontWeight:
-                        "700"
-                    }}
-                  >
-                    🤖 AI Score:{" "}
-                    {aiScore} / 10
-                  </p>
-
-                  {/* AI FEEDBACK */}
-                  <p
-                    style={{
-                      margin: 0,
-                      lineHeight:
-                        "1.6"
-                    }}
-                  >
-                    <strong>
-                      AI Feedback:
-                    </strong>{" "}
-                    {aiFeedback ||
-                      "No feedback available."}
-                  </p>
-                </div>
-              )}
+        {/* Individual question and answer feedback */}
+        <section className="result-answers-section">
+          <div className="result-section-heading">
+            <div>
+              <span className="result-section-kicker">DETAILED ANALYSIS</span>
+              <h2>Your Answers</h2>
+              <p>Review your responses and AI feedback question by question.</p>
             </div>
-          );
-        }
-      )}
+            <span className="result-count-badge">
+              {totalQuestions} Questions
+            </span>
+          </div>
 
-      {/* ==========================================
-          NAVIGATION BUTTONS
-          ========================================== */}
+          {answers?.length ? (
+            answers.map((answer, index) => {
+              const aiScore = getAIScore(index);
+              const aiFeedback = getAIFeedback(index);
+              const isSkipped = answer.trim() === "";
 
-      <div
-        style={{
-          display: "flex",
-          gap: "15px",
-          justifyContent:
-            "center",
-          marginTop: "30px"
-        }}
-      >
-        {/* BACK TO HOME */}
-        <button
-          onClick={() =>
-            navigate("/")
-          }
-          style={{
-            padding:
-              "12px 20px",
-            backgroundColor:
-              "#4f46e5",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "600"
-          }}
-        >
-          Back to Home
-        </button>
+              return (
+                <article className="result-answer-card" key={index}>
+                  <div className="result-question-top">
+                    <span className="result-question-number">
+                      QUESTION {String(index + 1).padStart(2, "0")}
+                    </span>
 
-        {/* RESTART INTERVIEW */}
-        <button
-          onClick={() =>
-            navigate(
-              "/interview-setup"
-            )
-          }
-          style={{
-            padding:
-              "12px 20px",
-            backgroundColor:
-              "#222",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "600"
-          }}
-        >
-          Restart Interview
-        </button>
+                    {aiScore !== null && (
+                      <span
+                        className={`result-answer-score ${
+                          aiScore >= 7
+                            ? "score-high"
+                            : aiScore >= 4
+                              ? "score-medium"
+                              : "score-low"
+                        }`}
+                      >
+                        AI Score: {aiScore}/10
+                      </span>
+                    )}
+
+                    {aiScore === null && (
+                      <span className="result-pending-badge">
+                        {isSkipped ? "Skipped" : "Submitted"}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3>{questions?.[index] || "Interview question"}</h3>
+
+                  <div className="result-user-answer">
+                    <span className="result-answer-label">YOUR ANSWER</span>
+                    <p>
+                      {isSkipped
+                        ? "Not answered — this question was skipped."
+                        : answer}
+                    </p>
+                  </div>
+
+                  {aiScore !== null && (
+                    <div className="result-feedback-panel">
+                      <div className="result-feedback-title">
+                        <span>✧</span> AI Feedback
+                      </div>
+                      <p>{aiFeedback || "No feedback available for this answer."}</p>
+                    </div>
+                  )}
+                </article>
+              );
+            })
+          ) : (
+            <div className="result-empty-state">
+              <span>◎</span>
+              <h3>No answer details available</h3>
+              <p>Complete an interview to see your detailed answer analysis here.</p>
+            </div>
+          )}
+        </section>
+
+        {/* Navigation actions */}
+        <footer className="result-footer">
+          <p>READY FOR YOUR NEXT CHALLENGE?</p>
+          <div className="result-actions">
+            <button
+              className="result-btn result-btn-secondary"
+              onClick={() => navigate("/")}
+            >
+              ← Back to Home
+            </button>
+
+            <button
+              className="result-btn result-btn-primary"
+              onClick={() => navigate("/interview-setup")}
+            >
+              Restart Interview <span>↗</span>
+            </button>
+          </div>
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }
 
