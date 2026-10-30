@@ -366,59 +366,25 @@ function InterviewSetup() {
         uploadedResume?.resumeText || "";
 
       // ==========================================
-      // FALLBACK QUESTIONS
-      // ==========================================
-      //
-      // Pehle local backup questions generate
-      // kar lenge.
-      // Agar Gemini successfully questions deta hai,
-      // to Gemini questions use honge.
-      // ==========================================
-
-      const fallbackQuestions =
-        generateResumeQuestions(
-          resumeText,
-          role,
-          experience,
-          type,
-          questionCount
-        );
-
-      // ==========================================
       // GEMINI AI QUESTION GENERATION
       // ==========================================
 
-      let personalizedQuestions =
-        fallbackQuestions;
+      let personalizedQuestions = [];
 
       try {
-        console.log(
-          "================================="
-        );
-
-        console.log(
-          "Generating questions using Gemini AI..."
-        );
-
-        console.log(
-          "Question Count:",
-          questionCount
-        );
-
-        console.log(
-          "================================="
-        );
+        console.log("=================================");
+        console.log("Generating questions using Gemini AI...");
+        console.log("Question Count:", questionCount);
+        console.log("Resume Text Available:", Boolean(resumeText));
+        console.log("=================================");
 
         const aiResponse = await fetch(
           "http://localhost:5000/api/generate-interview-questions",
           {
             method: "POST",
-
             headers: {
-              "Content-Type":
-                "application/json"
+              "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
               resumeText,
               role,
@@ -429,59 +395,56 @@ function InterviewSetup() {
           }
         );
 
-        const aiData =
-          await aiResponse.json();
+        // Read the backend response. Invalid JSON will be handled below.
+        const aiData = await aiResponse.json();
 
-        // Gemini successfully questions return kare
-        if (
-          aiResponse.ok &&
-          aiData.success &&
-          Array.isArray(aiData.questions) &&
-          aiData.questions.length > 0
-        ) {
-          personalizedQuestions =
-            aiData.questions.slice(
-              0,
-              Number(questionCount)
-            );
-
-          console.log(
-            "================================="
-          );
-
-          console.log(
-            "Gemini AI Questions:"
-          );
-
-          personalizedQuestions.forEach(
-            (question, index) => {
-              console.log(
-                `Question ${index + 1}: ${question}`
-              );
-            }
-          );
-
-          console.log(
-            "================================="
-          );
-        } else {
-          console.log(
-            "Gemini questions unavailable. Using fallback questions."
+        // Do not continue with local/fallback questions if Gemini fails.
+        if (!aiResponse.ok || !aiData.success) {
+          throw new Error(
+            aiData.message ||
+            aiData.error ||
+            `Gemini API request failed (HTTP ${aiResponse.status}).`
           );
         }
+
+        if (
+          !Array.isArray(aiData.questions) ||
+          aiData.questions.length === 0
+        ) {
+          throw new Error(
+            "Gemini did not return valid interview questions. Please try again."
+          );
+        }
+
+        personalizedQuestions = aiData.questions
+          .filter(
+            (question) =>
+              typeof question === "string" &&
+              question.trim() !== ""
+          )
+          .slice(0, Number(questionCount));
+
+        if (personalizedQuestions.length === 0) {
+          throw new Error(
+            "Gemini returned an empty question list. Please try again."
+          );
+        }
+
+        console.log("Gemini generated questions successfully:");
+        personalizedQuestions.forEach((question, index) => {
+          console.log(`Question ${index + 1}: ${question}`);
+        });
       } catch (aiError) {
-        // Gemini fail hone par interview ko
-        // completely stop nahi karna.
-        // Local fallback questions use honge.
+        console.error("Gemini question generation error:", aiError);
 
-        console.error(
-          "Gemini question generation error:",
-          aiError
+        // Show a clear error and stop. Never start the interview with fallback questions.
+        alert(
+          `AI question generation failed. Your interview was not started.\n\nReason: ${
+            aiError.message || "Unknown Gemini API error"
+          }\n\nPlease check your API availability and try again.`
         );
 
-        console.log(
-          "Using fallback interview questions."
-        );
+        return;
       }
 
       // ==========================================
